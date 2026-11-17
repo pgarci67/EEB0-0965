@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador Encoders i Comptadors Ràpids (HSC) S7-1200 — Mòdul 0965</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-alt: #263349;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --siemens: #009999;
+      --siemens-dark: #007373;
+      --accent: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+      --purple: #c084fc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 3rem;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0b2239 0%, #0f172a 100%);
+      border-bottom: 2px solid var(--siemens);
+      padding: 1.25rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+    }
+
+    .badge {
+      background: var(--siemens);
+      color: #fff;
+      font-weight: 700;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    nav.tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    nav.tabs button {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.6rem 1.1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    nav.tabs button:hover {
+      color: var(--text);
+      border-color: var(--siemens);
+    }
+
+    nav.tabs button.active {
+      background: var(--siemens);
+      color: #fff;
+      border-color: var(--siemens);
+    }
+
+    main {
+      max-width: 1280px;
+      margin: 1.5rem auto;
+      padding: 0 1.25rem;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Guia didàctica */
+    .guide-box {
+      background: rgba(0, 153, 153, 0.1);
+      border: 1px solid var(--siemens);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .guide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .guide-header h2 {
+      font-size: 1rem;
+      color: #5eead4;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .guide-toggle {
+      background: rgba(0, 153, 153, 0.25);
+      border: 1px solid var(--siemens);
+      color: #ccfbf1;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .guide-body {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      color: #e2e8f0;
+    }
+
+    .guide-body.collapsed {
+      display: none;
+    }
+
+    .guide-body ul {
+      margin-left: 1.25rem;
+      margin-top: 0.4rem;
+    }
+
+    .guide-body li {
+      margin-bottom: 0.25rem;
+    }
+
+    /* Controls superiors */
+    .control-bar {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.25rem;
+      align-items: end;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    select, input[type="number"] {
+      width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.95rem;
+    }
+
+    select:focus, input[type="number"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .slider-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .slider-top {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+    }
+
+    .slider-top input[type="number"] {
+      width: 115px;
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 1.05rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--siemens);
+      cursor: pointer;
+      height: 8px;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .btn {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.8rem;
+      border-radius: 7px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+    }
+
+    .btn.active-dir {
+      background: var(--siemens);
+      border-color: var(--siemens);
+      color: #fff;
+    }
+
+    .btn.primary {
+      background: var(--siemens);
+      border-color: var(--siemens);
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      background: var(--siemens-dark);
+    }
+
+    .btn.warn {
+      border-color: rgba(245, 158, 11, 0.6);
+      color: #fcd34d;
+    }
+
+    .btn.danger {
+      border-color: rgba(239, 68, 68, 0.6);
+      color: #fca5a5;
+    }
+
+    /* Graelles i targetes */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem;
+    }
+
+    .card h3 {
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+      color: #f1f5f9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tag-mini {
+      font-size: 0.74rem;
+      background: var(--panel-alt);
+      color: var(--accent);
+      padding: 0.18rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+    }
+
+    .big-readout {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      text-align: center;
+      margin: 0.5rem 0;
+    }
+
+    .big-readout .val {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .big-readout .lbl {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+    }
+
+    .kv-list {
+      list-style: none;
+      font-size: 0.86rem;
+      margin-top: 0.5rem;
+    }
+
+    .kv-list li {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.38rem 0;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+    }
+
+    .kv-list li:last-child {
+      border-bottom: none;
+    }
+
+    .mono {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-weight: 600;
+    }
+
+    .status-pill {
+      display: block;
+      padding: 0.45rem 0.75rem;
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-align: center;
+      margin-top: 0.6rem;
+    }
+
+    .status-ok { background: rgba(34, 197, 94, 0.18); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.45); }
+    .status-warn { background: rgba(245, 158, 11, 0.18); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.45); }
+    .status-err { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.45); }
+
+    /* Canvas disc i oscil·loscopi */
+    .canvas-box {
+      background: #090e1a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    canvas {
+      max-width: 100%;
+      display: block;
+    }
+
+    /* Blocs TIA Portal */
+    .tia-block {
+      background: #e2e8f0;
+      color: #0f172a;
+      border: 2px solid #64748b;
+      border-radius: 6px;
+      width: 100%;
+      max-width: 340px;
+      margin: 0 auto;
+      font-family: 'Consolas', monospace;
+      font-size: 0.82rem;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    .tia-block-header {
+      background: #0d9488;
+      color: #fff;
+      font-weight: 700;
+      text-align: center;
+      padding: 0.35rem;
+      border-bottom: 2px solid #0f766e;
+    }
+
+    .tia-block-sub {
+      background: #cbd5e1;
+      text-align: center;
+      font-size: 0.74rem;
+      padding: 0.15rem;
+      color: #334155;
+      border-bottom: 1px solid #94a3b8;
+    }
+
+    .tia-pins {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 0.55rem 0.65rem;
+      gap: 0.35rem;
+    }
+
+    .pin-left { text-align: left; }
+    .pin-right { text-align: right; }
+
+    .pin-val {
+      display: inline-block;
+      background: #fff;
+      border: 1px solid #94a3b8;
+      padding: 0.05rem 0.35rem;
+      border-radius: 3px;
+      font-weight: 700;
+      color: #0369a1;
+    }
+
+    /* LEDs i portes */
+    .led-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .led {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #334155;
+      border: 2px solid #475569;
+      flex-shrink: 0;
+    }
+
+    .led.red.on { background: #ef4444; border-color: #fecaca; box-shadow: 0 0 12px #ef4444; }
+    .led.yellow.on { background: #eab308; border-color: #fef08a; box-shadow: 0 0 12px #eab308; }
+    .led.green.on { background: #22c55e; border-color: #bbf7d0; box-shadow: 0 0 12px #22c55e; }
+
+    .switch-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg);
+      padding: 0.6rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 0.5rem;
+    }
+
+    .switch-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--siemens);
+      cursor: pointer;
+    }
+
+    /* Reptes */
+    .challenge-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .score-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .q-text {
+      font-size: 1.05rem;
+      margin-bottom: 1.25rem;
+      color: #f1f5f9;
+    }
+
+    .ans-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .ans-row input {
+      max-width: 220px;
+    }
+
+    .feedback-box {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      display: none;
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="badge">EEB0 · MP 0965</span>
+    <div>
+      <h1>Simulador d'Encoders i Comptadors Ràpids (HSC) — S7-1200</h1>
+      <div class="subtitle">Sistemes Programables Avançats · Quadratura A/B/Z, Freqüència, Cicle de Scan, %ID1000 i CTRL_HSC_EXT</div>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="tab-enc">1. Encoder, Quadratura i Scan</button>
+    <button class="tab-btn" data-tab="tab-hsc">2. Comptador Ràpid HSC1 (%ID1000)</button>
+    <button class="tab-btn" data-tab="tab-quiz">3. Laboratori de Reptes</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ==================== PESTANYA 1: ENCODER, QUADRATURA I SCAN ==================== -->
+  <section id="tab-enc" class="tab-content active">
+    <div class="guide-box">
+      <div class="guide-header" onclick="toggleGuide('guide-enc', this)">
+        <h2>📘 Què fem en aquesta pestanya? Com funciona un Encoder Incremental i per què cal un HSC</h2>
+        <span class="guide-toggle">Amagar guia</span>
+      </div>
+      <div id="guide-enc" class="guide-body">
+        <p>Un encoder incremental envia trens d'impulsos mentre gira l'eix del motor. Aquí pots experimentar amb tres conceptes clau del temari:</p>
+        <ul>
+          <li><strong>Senyals A/B en quadratura (90°):</strong> Observa l'oscil·loscopi. Si l'eix gira a <strong>dretes (horari)</strong>, la fase <strong>A</strong> va avançada $90^\circ$ respecte a <strong>B</strong>; si gira a <strong>esquerres (antihorari)</strong>, <strong>B</strong> va avançada respecte a <strong>A</strong>. El canal <strong>Z</strong> fa 1 impuls per volta completa.</li>
+          <li><strong>Càlcul de freqüència ($F = \frac{\text{Polsos} \cdot \text{rpm}}{60}$):</strong> Prova l'exemple del PDF (<strong>600 polsos a 1500 rpm = 15 kHz</strong>).</li>
+          <li><strong>Per què un comptador normal (<code>CTU</code> a <code>OB1</code>) falla:</strong> Un cicle de Scan normal (ex. 150 ms) només pot llegir senyals lents ($< 3\text{ Hz}$). A 15 kHz passen milers de polsos entre lectura i lectura; per això necessitem les <strong>entrades ràpides de maquinari (HSC)</strong>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="control-bar">
+      <div class="field">
+        <label for="enc-ppr">1. Resolució de l'Encoder (Polsos/Volta)</label>
+        <select id="enc-ppr">
+          <option value="100">100 PPR (Baixa resolució)</option>
+          <option value="360">360 PPR (1 pols per grau)</option>
+          <option value="600" selected>600 PPR (Exemple del PDF)</option>
+          <option value="1024">1024 PPR (Estàndard industrial)</option>
+          <option value="2500">2500 PPR (Alta precisió)</option>
+        </select>
+      </div>
+
+      <div class="field slider-wrap">
+        <label for="enc-rpm-num">2. Velocitat del motor (RPM)</label>
+        <div class="slider-top">
+          <input type="number" id="enc-rpm-num" min="0" max="6000" step="10" value="1500" />
+          <span style="font-size:0.82rem; color:var(--muted);">0 – 6000 rpm</span>
+        </div>
+        <input type="range" id="enc-rpm-slider" min="0" max="6000" step="10" value="1500" />
+      </div>
+
+      <div class="field">
+        <label>3. Sentit de gir de l'eix</label>
+        <div class="btn-group">
+          <button type="button" id="btn-cw" class="btn active-dir" onclick="setDirection(1)">↻ Dretes (Horari · A abans que B)</button>
+          <button type="button" id="btn-ccw" class="btn" onclick="setDirection(-1)">↺ Esquerres (Antihorari · B abans que A)</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="scan-ms">4. Temps de cicle de SCAN (OB1)</label>
+        <select id="scan-ms">
+          <option value="10">10 ms (Programa molt curt)</option>
+          <option value="50">50 ms (Programa mitjà)</option>
+          <option value="150" selected>150 ms (Valor per defecte S7-1200)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Visualització Disc i Senyals A/B/Z -->
+      <div class="card">
+        <h3>
+          <span>Disc Òptic i Oscil·loscopi A / B / Z</span>
+          <span class="tag-mini" id="osc-dir-tag">Sentit: Dretes (A → B)</span>
+        </h3>
+        <div style="display:grid; grid-template-columns: 150px 1fr; gap:0.75rem; align-items:center;">
+          <div class="canvas-box">
+            <canvas id="disc-canvas" width="140" height="140"></canvas>
+            <small style="color:var(--muted); font-size:0.72rem; margin-top:4px;">Eix Encoder</small>
+          </div>
+          <div class="canvas-box">
+            <canvas id="scope-canvas" width="420" height="155"></canvas>
+          </div>
+        </div>
+        <ul class="kv-list" style="margin-top:0.75rem;">
+          <li><span>Desfasament entre Canal A i Canal B:</span> <span class="mono">90° elèctrics (Quadratura)</span></li>
+          <li><span>Canal Z (Zero / Index):</span> <span class="mono">1 impuls per volta completa (360°)</span></li>
+          <li><span>Detecció del PLC (Flanc ascendent A):</span> <span class="mono" id="quad-logic">Si B = 0 → Compta +1 (Ascendent)</span></li>
+        </ul>
+      </div>
+
+      <!-- Càlcul de Freqüència i Cicle de Scan -->
+      <div class="card">
+        <h3>
+          <span>Freqüència d'impulsos i Límit del Cicle de SCAN</span>
+          <span class="tag-mini">F = (Polsos · rpm) / 60</span>
+        </h3>
+        <div class="big-readout">
+          <div class="val" id="freq-val">15.00 kHz</div>
+          <div class="lbl" id="freq-hz">15000 impulsos/segon (Període T = 66.7 µs)</div>
+        </div>
+
+        <ul class="kv-list">
+          <li><span>Impulsos generats en 1 cicle de SCAN (<span id="scan-lbl">150</span> ms):</span> <span class="mono" id="pulses-per-scan">2250 polsos!</span></li>
+          <li><span>Freqüència màx. d'un comptador normal (OB1):</span> <span class="mono" id="max-scan-freq">3.33 Hz</span></li>
+          <li><span>Entrades CPU 1214C/1215C (%I0.0 a %I0.5):</span> <span class="mono" id="cpu-fast-status">100 kHz (80 kHz en A/B) → APTE</span></li>
+          <li><span>Entrades CPU 1214C/1215C (%I0.6 a %I1.5):</span> <span class="mono" id="cpu-med-status">30 kHz (20 kHz en A/B) → APTE</span></li>
+        </ul>
+
+        <div id="scan-alert" class="status-pill status-err">
+          IMPOSSIBLE AMB OB1 NORMAL: Es perdrien 2249 de cada 2250 polsos! Cal activar HSC.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== PESTANYA 2: COMPTADOR RÀPID HSC1 (%ID1000) ==================== -->
+  <section id="tab-hsc" class="tab-content">
+    <div class="guide-box">
+      <div class="guide-header" onclick="toggleGuide('guide-hsc', this)">
+        <h2>📗 Què fem en aquesta pestanya? Simulació de HSC1 (%ID1000) i bloc CTRL_HSC_EXT</h2>
+        <span class="guide-toggle">Amagar guia</span>
+      </div>
+      <div id="guide-hsc" class="guide-body">
+        <p>Aquí simules el comptador ràpid <strong>HSC1</strong> tal com es configura a TIA Portal al temari:</p>
+        <ul>
+          <li><strong>Porta Interna (Hardware + Software):</strong> El comptador només compta si la <em>Porta Hardware</em> i la <em>Porta Software</em> (<code>EnHSC = TRUE</code>) estan obertes alhora.</li>
+          <li><strong>Fases de servei:</strong> Comprova com canvia el comptatge entre <em>Fase simple</em> (1 pols/cicle), <em>Comptador A/B</em> i <em>A/B Quàdruple</em> (multiplica x4 la resolució comptant els 4 flancs d'A i B).</li>
+          <li><strong>Valor de Referència (<code>RV</code>) i Interrupció <code>OB40</code>:</strong> Quan <code>%ID1000 == RV</code> (per defecte 1500), es dispara l'alarma de procés <code>OB40</code> que activa <code>%Q0.2 ("Verda")</code>.</li>
+          <li><strong>Comparació en temps real:</strong> Observa com s'activen <code>%Q0.0</code> (0..750) i <code>%Q0.1</code> (751..1500 amb <code>IN_RANGE</code>).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <!-- Configuració i Portes -->
+      <div class="card">
+        <h3>1. Portes i Configuració HSC1 <span class="tag-mini">%ID1000 (DInt)</span></h3>
+
+        <div class="switch-row">
+          <div>
+            <strong>Porta Software (<code>EnHSC</code>)</strong>
+            <div style="font-size:0.76rem; color:var(--muted);">Controlada per programa (%I0.5 "Habilita")</div>
+          </div>
+          <input type="checkbox" id="gate-sw" checked onchange="updateGateUI()" />
+        </div>
+
+        <div class="switch-row">
+          <div>
+            <strong>Porta Hardware (Entrada física)</strong>
+            <div style="font-size:0.76rem; color:var(--muted);">Senyal extern d'habilitació de comptatge</div>
+          </div>
+          <input type="checkbox" id="gate-hw" checked onchange="updateGateUI()" />
+        </div>
+
+        <div id="gate-internal-pill" class="status-pill status-ok" style="margin-bottom:0.85rem;">
+          PORTA INTERNA: OBERTA (Comptant impulsos)
+        </div>
+
+        <div class="field" style="margin-bottom:0.65rem;">
+          <label for="hsc-phase-mode">Fase de servei (Mode de comptatge)</label>
+          <select id="hsc-phase-mode">
+            <option value="single">Fase simple (1 flanc per cicle)</option>
+            <option value="ab" selected>Comptador A/B (Quadratura x1)</option>
+            <option value="ab4">Comptador A/B Quàdruple (Quadratura x4)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="hsc-rv">Valor de Referència Inicial (RV · Dispara OB40)</label>
+          <input type="number" id="hsc-rv" value="1500" step="10" />
+        </div>
+      </div>
+
+      <!-- Display Comptatge i Simulació de Moviment -->
+      <div class="card">
+        <h3>2. Valor Actual (%ID1000) <span class="tag-mini">Local~HSC_1 (ID 257)</span></h3>
+
+        <div class="big-readout">
+          <div class="val" id="hsc-cv" style="color:var(--ok);">0</div>
+          <div class="lbl" id="hsc-revs">Voltes completes (600 PPR): 0.00 voltes</div>
+        </div>
+
+        <div class="btn-group" style="justify-content:center; margin:0.75rem 0;">
+          <button type="button" id="btn-run-motor" class="btn primary" onclick="toggleMotorSim()">▶ Engegar Motor (Auto)</button>
+          <button type="button" class="btn" onclick="stepPulses(1)">+1 Pols</button>
+          <button type="button" class="btn" onclick="stepPulses(100)">+100 Polsos</button>
+          <button type="button" class="btn" onclick="stepPulses(-100)">-100 Polsos</button>
+        </div>
+
+        <div class="btn-group" style="justify-content:center;">
+          <button type="button" class="btn warn" onclick="triggerSync()">⚡ Entrada Sync (%I0.3 → Posar a 0)</button>
+          <button type="button" class="btn" onclick="loadNewCV(5000)">MOVE 5000 → NewCurrentCount</button>
+        </div>
+
+        <ul class="kv-list" style="margin-top:0.75rem;">
+          <li><span>Sentit actual (<code>DirChange</code>):</span> <span class="mono" id="hsc-dir-lbl">Ascendent (+1)</span></li>
+          <li><span>Filtre d'entrada digital (%I1.0/%I1.1):</span> <span class="mono">20 µs (Activats per alta freq.)</span></li>
+        </ul>
+      </div>
+
+      <!-- Bloc CTRL_HSC_EXT i Sortides / Alarmes -->
+      <div class="card">
+        <h3>3. Bloc CTRL_HSC_EXT i Alarmes <span class="tag-mini">OB1 + OB40</span></h3>
+
+        <div class="tia-block" style="margin-bottom:0.9rem;">
+          <div class="tia-block-header">CTRL_HSC_EXT</div>
+          <div class="tia-block-sub">%DB1 "CTRL_HSC_EXT_DB"</div>
+          <div class="tia-pins">
+            <div class="pin-left">HSC: <span class="pin-val">257</span></div>
+            <div class="pin-right">DONE: <span class="pin-val">true</span></div>
+            <div class="pin-left">EnHSC: <span class="pin-val" id="tia-enhsc">true</span></div>
+            <div class="pin-right">BUSY: <span class="pin-val">false</span></div>
+            <div class="pin-left">RV: <span class="pin-val" id="tia-rv">1500</span></div>
+            <div class="pin-right">ERROR: <span class="pin-val">false</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+          <div class="led-card">
+            <div id="led-red" class="led red on"></div>
+            <div>
+              <div class="mono"><strong>%Q0.0 "Vermella"</strong></div>
+              <div style="font-size:0.78rem; color:var(--muted);">Activa si <code>0 ≤ %ID1000 ≤ 750</code></div>
+            </div>
+          </div>
+
+          <div class="led-card">
+            <div id="led-yellow" class="led yellow"></div>
+            <div>
+              <div class="mono"><strong>%Q0.1 "Groga" (IN_RANGE)</strong></div>
+              <div style="font-size:0.78rem; color:var(--muted);">Activa si <code>751 ≤ %ID1000 ≤ 1500</code></div>
+            </div>
+          </div>
+
+          <div class="led-card" style="justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+              <div id="led-green" class="led green"></div>
+              <div>
+                <div class="mono"><strong>%Q0.2 "Verda" (Alarma OB40)</strong></div>
+                <div style="font-size:0.78rem; color:var(--muted);">SET quan <code>%ID1000 == RV</code></div>
+              </div>
+            </div>
+            <button type="button" class="btn danger" style="padding:0.3rem 0.55rem; font-size:0.76rem;" onclick="resetGreenAlarm()">Reset %I0.4</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== PESTANYA 3: LABORATORI DE REPTES ==================== -->
+  <section id="tab-quiz" class="tab-content">
+    <div class="guide-box">
+      <div class="guide-header" onclick="toggleGuide('guide-quiz', this)">
+        <h2>📙 Què fem en aquesta pestanya? Entrenament pràctic sobre Encoders i HSC</h2>
+        <span class="guide-toggle">Amagar guia</span>
+      </div>
+      <div id="guide-quiz" class="guide-body">
+        <p>Resol els exercicis pràctics aleatoris extrets directament dels conceptes del PDF:</p>
+        <ul>
+          <li>Calcula la freqüència en <strong>kHz</strong> d'un encoder amb la fórmula $F = \frac{\text{Polsos} \cdot \text{rpm}}{60}$.</li>
+          <li>Determina el nombre d'impulsos acumulats després d'un cert nombre de voltes (tenint en compte el mode quadratura x1 o x4).</li>
+          <li>Identifica adreces de memòria predeterminades (<code>%ID1000</code>..<code>%ID1020</code>) i límits de freqüència de les entrades de la CPU S7-1214C/1215C.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="challenge-card">
+      <div class="score-bar">
+        <div>
+          <span class="badge" id="q-category">FREQÜÈNCIA ENCODER</span>
+          <span style="margin-left:0.5rem; font-size:0.85rem; color:var(--muted);">Repte #<span id="q-num">1</span></span>
+        </div>
+        <div class="mono" style="color:var(--ok);">Encerts: <span id="q-score">0</span> / <span id="q-total">0</span></div>
+      </div>
+
+      <div class="q-text" id="q-prompt">Carregant repte...</div>
+
+      <div class="ans-row">
+        <input type="number" id="q-user-ans" step="any" placeholder="Escriu la teva resposta..." />
+        <span class="mono" id="q-ans-unit" style="color:var(--muted);"></span>
+        <button type="button" class="btn primary" onclick="checkChallenge()">Comprovar resposta</button>
+        <button type="button" class="btn" onclick="nextChallenge()">Següent repte ➔</button>
+      </div>
+
+      <div id="q-feedback" class="feedback-box"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+  // ==================== NAVEGACIÓ I GUIES ====================
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  function toggleGuide(id, headerEl) {
+    const body = document.getElementById(id);
+    const pill = headerEl.querySelector('.guide-toggle');
+    const isCollapsed = body.classList.toggle('collapsed');
+    pill.textContent = isCollapsed ? 'Mostrar guia' : 'Amagar guia';
+  }
+
+  // ==================== PESTANYA 1: ENCODER, QUADRATURA I SCAN ====================
+  let direction = 1; // 1 = CW (Dretes), -1 = CCW (Esquerres)
+  let discAngle = 0;
+  let wavePhase = 0;
+
+  const pprSelect = document.getElementById('enc-ppr');
+  const rpmNum = document.getElementById('enc-rpm-num');
+  const rpmSlider = document.getElementById('enc-rpm-slider');
+  const scanSelect = document.getElementById('scan-ms');
+
+  rpmSlider.addEventListener('input', () => {
+    rpmNum.value = rpmSlider.value;
+    updateEncoderCalc();
+  });
+
+  rpmNum.addEventListener('input', () => {
+    const raw = rpmNum.value.replace(',', '.');
+    const val = parseFloat(raw);
+    if (!isNaN(val)) {
+      rpmSlider.value = Math.min(Math.max(val, 0), 6000);
+      updateEncoderCalc(val);
+    }
+  });
+
+  pprSelect.addEventListener('change', () => updateEncoderCalc());
+  scanSelect.addEventListener('change', () => updateEncoderCalc());
+
+  function setDirection(dir) {
+    direction = dir;
+    document.getElementById('btn-cw').classList.toggle('active-dir', dir === 1);
+    document.getElementById('btn-ccw').classList.toggle('active-dir', dir === -1);
+    document.getElementById('osc-dir-tag').textContent = dir === 1 ? 'Sentit: Dretes (A → B)' : 'Sentit: Esquerres (B → A)';
+    document.getElementById('quad-logic').textContent = dir === 1
+      ? 'Flanc ↑ A amb B = 0 → Compta +1 (Ascendent)'
+      : 'Flanc ↑ A amb B = 1 → Compta -1 (Descendent)';
+    document.getElementById('hsc-dir-lbl').textContent = dir === 1 ? 'Ascendent (+1)' : 'Descendent (-1)';
+  }
+
+  function updateEncoderCalc(overrideRpm = null) {
+    const ppr = parseInt(pprSelect.value, 10);
+    let rpm = overrideRpm !== null ? overrideRpm : parseFloat(rpmNum.value.replace(',', '.'));
+    if (isNaN(rpm) || rpm < 0) rpm = 0;
+    const scanMs = parseFloat(scanSelect.value);
+
+    const freqHz = (ppr * rpm) / 60;
+    const freqKhz = freqHz / 1000;
+    const periodUs = freqHz > 0 ? (1e6 / freqHz) : 0;
+
+    document.getElementById('freq-val').textContent = freqKhz >= 1
+      ? `${freqKhz.toFixed(2)} kHz`
+      : `${freqHz.toFixed(1)} Hz`;
+
+    document.getElementById('freq-hz').textContent = freqHz > 0
+      ? `${Math.round(freqHz)} impulsos/segon (Període T = ${periodUs.toFixed(1)} µs)`
+      : 'Motor aturat (0 impulsos/segon)';
+
+    // Cicle de Scan
+    document.getElementById('scan-lbl').textContent = scanMs;
+    const pulsesPerScan = freqHz * (scanMs / 1000);
+    const maxScanFreq = 1000 / (2 * scanMs); // Nyquist: mínim 2 lectures per període
+
+    document.getElementById('pulses-per-scan').textContent = `${pulsesPerScan.toFixed(1)} polsos`;
+    document.getElementById('max-scan-freq').textContent = `${maxScanFreq.toFixed(2)} Hz`;
+
+    const scanAlert = document.getElementById('scan-alert');
+    if (freqHz === 0) {
+      scanAlert.className = 'status-pill status-ok';
+      scanAlert.textContent = 'Motor aturat: No hi ha impulsos a llegir.';
+    } else if (freqHz <= maxScanFreq) {
+      scanAlert.className = 'status-pill status-ok';
+      scanAlert.textContent = `Freqüència molt baixa (${freqHz.toFixed(1)} Hz ≤ ${maxScanFreq.toFixed(1)} Hz): Es podria llegir sense HSC.`;
+    } else {
+      scanAlert.className = 'status-pill status-err';
+      scanAlert.textContent = `IMPOSSIBLE AMB OB1 NORMAL: Passen ${Math.round(pulsesPerScan)} polsos per cada Scan! Cal activar HSC.`;
+    }
+
+    // Compatibilitat entrades CPU 1214C/1215C (Taula 10-9 del PDF: 80 kHz A/B a I0.0..I0.5, 20 kHz A/B a I0.6..I1.5)
+    document.getElementById('cpu-fast-status').textContent = freqKhz <= 80
+      ? '80 kHz (A/B) → APTE ✔'
+      : '80 kHz (A/B) → SUPERAT ✘';
+    document.getElementById('cpu-med-status').textContent = freqKhz <= 20
+      ? '20 kHz (A/B) → APTE ✔'
+      : '20 kHz (A/B) → SUPERAT ✘ (Usar %I0.0..%I0.5)';
+  }
+
+  // Animació del disc i oscil·loscopi A/B/Z
+  const discCanvas = document.getElementById('disc-canvas');
+  const discCtx = discCanvas.getContext('2d');
+  const scopeCanvas = document.getElementById('scope-canvas');
+  const scopeCtx = scopeCanvas.getContext('2d');
+
+  function drawDiscAndScope() {
+    const rpm = Math.max(0, parseFloat(rpmNum.value) || 0);
+    const speedFactor = Math.min(rpm / 1500, 3.5);
+
+    discAngle += direction * 0.03 * speedFactor;
+    wavePhase += direction * 0.07 * speedFactor;
+
+    // 1. Dibuixar Disc
+    const cx = 70, cy = 70, r = 56;
+    discCtx.clearRect(0, 0, 140, 140);
+
+    discCtx.save();
+    discCtx.translate(cx, cy);
+    discCtx.rotate(discAngle);
+
+    // Cos del disc
+    discCtx.beginPath();
+    discCtx.arc(0, 0, r, 0, Math.PI * 2);
+    discCtx.fillStyle = '#1e293b';
+    discCtx.fill();
+    discCtx.lineWidth = 2;
+    discCtx.strokeStyle = '#38bdf8';
+    discCtx.stroke();
+
+    // Ranures exteriors (Canal A/B)
+    const slots = 24;
+    for (let i = 0; i < slots; i++) {
+      const a = (i / slots) * Math.PI * 2;
+      discCtx.save();
+      discCtx.rotate(a);
+      discCtx.fillStyle = i === 0 ? '#c084fc' : '#5eead4';
+      discCtx.fillRect(r - 12, -2, 8, 4);
+      // Ranura Z (1 per volta)
+      if (i === 0) {
+        discCtx.fillStyle = '#f59e0b';
+        discCtx.fillRect(r - 22, -3, 7, 6);
+      }
+      discCtx.restore();
+    }
+
+    // Eix central
+    discCtx.beginPath();
+    discCtx.arc(0, 0, 10, 0, Math.PI * 2);
+    discCtx.fillStyle = '#94a3b8';
+    discCtx.fill();
+    discCtx.restore();
+
+    // Fletxa de sentit fixa
+    discCtx.fillStyle = '#f8fafc';
+    discCtx.font = 'bold 11px sans-serif';
+    discCtx.fillText(direction === 1 ? '↻ CW' : '↺ CCW', 4, 14);
+
+    // 2. Dibuixar Oscil·loscopi A / B / Z
+    const w = scopeCanvas.width;
+    const h = scopeCanvas.height;
+    scopeCtx.clearRect(0, 0, w, h);
+
+    // Graella de fons
+    scopeCtx.strokeStyle = '#1e293b';
+    scopeCtx.lineWidth = 1;
+    for (let x = 0; x < w; x += 35) {
+      scopeCtx.beginPath();
+      scopeCtx.moveTo(x, 0);
+      scopeCtx.lineTo(x, h);
+      scopeCtx.stroke();
+    }
+
+    function drawSquareWave(yBase, amp, phaseOffset, color, label, isZ = false) {
+      scopeCtx.strokeStyle = color;
+      scopeCtx.lineWidth = 2.2;
+      scopeCtx.beginPath();
+
+      for (let x = 45; x < w - 10; x++) {
+        const theta = ((x - 45) * 0.045) - wavePhase + phaseOffset;
+        let high = false;
+        if (isZ) {
+          const mod = ((theta % (Math.PI * 8)) + Math.PI * 8) % (Math.PI * 8);
+          high = mod < 0.45;
+        } else {
+          high = Math.sin(theta) >= 0;
+        }
+        const y = high ? yBase - amp : yBase;
+        if (x === 45) scopeCtx.moveTo(x, y);
+        else scopeCtx.lineTo(x, y);
+      }
+      scopeCtx.stroke();
+
+      scopeCtx.fillStyle = color;
+      scopeCtx.font = 'bold 11px Consolas, monospace';
+      scopeCtx.fillText(label, 6, yBase - 6);
+    }
+
+    // En quadratura: si CW (direction=1), B va 90° (PI/2) endarrerit respecte A. Si CCW, B va 90° avançat.
+    const bOffset = direction === 1 ? -Math.PI / 2 : Math.PI / 2;
+    drawSquareWave(42, 24, 0, '#38bdf8', 'Canal A');
+    drawSquareWave(92, 24, bOffset, '#22c55e', 'Canal B');
+    drawSquareWave(140, 22, 0, '#f59e0b', 'Canal Z', true);
+
+    requestAnimationFrame(drawDiscAndScope);
+  }
+
+  // ==================== PESTANYA 2: COMPTADOR RÀPID HSC1 (%ID1000) ====================
+  let currentCount = 0;
+  let motorRunning = false;
+  let motorTimer = null;
+
+  function isInternalGateOpen() {
+    const sw = document.getElementById('gate-sw').checked;
+    const hw = document.getElementById('gate-hw').checked;
+    return sw && hw;
+  }
+
+  function updateGateUI() {
+    const sw = document.getElementById('gate-sw').checked;
+    const open = isInternalGateOpen();
+    document.getElementById('tia-enhsc').textContent = sw ? 'true' : 'false';
+    const pill = document.getElementById('gate-internal-pill');
+    if (open) {
+      pill.className = 'status-pill status-ok';
+      pill.textContent = 'PORTA INTERNA: OBERTA (Comptant impulsos)';
+    } else {
+      pill.className = 'status-pill status-err';
+      pill.textContent = 'PORTA INTERNA: TANCADA (Impulsos ignorats)';
+    }
+  }
+
+  function stepPulses(delta) {
+    if (!isInternalGateOpen()) return;
+    const mode = document.getElementById('hsc-phase-mode').value;
+    const mult = mode === 'ab4' ? 4 : 1;
+    const prev = currentCount;
+    currentCount += delta * mult;
+
+    const rv = parseInt(document.getElementById('hsc-rv').value, 10) || 1500;
+    // Comprovar pas per RV per disparar alarma OB40
+    if ((prev < rv && currentCount >= rv) || (prev > rv && currentCount <= rv)) {
+      document.getElementById('led-green').classList.add('on');
+    }
+    updateHscDisplay();
+  }
+
+  function toggleMotorSim() {
+    motorRunning = !motorRunning;
+    const btn = document.getElementById('btn-run-motor');
+    if (motorRunning) {
+      btn.textContent = '⏸ Aturar Motor';
+      btn.classList.add('warn');
+      motorTimer = setInterval(() => {
+        if (!isInternalGateOpen()) return;
+        const rpm = Math.max(60, parseFloat(rpmNum.value) || 600);
+        const step = Math.max(1, Math.round((rpm / 600) * 12)) * direction;
+        stepPulses(step);
+      }, 60);
+    } else {
+      btn.textContent = '▶ Engegar Motor (Auto)';
+      btn.classList.remove('warn');
+      clearInterval(motorTimer);
+    }
+  }
+
+  function triggerSync() {
+    currentCount = 0;
+    updateHscDisplay();
+  }
+
+  function loadNewCV(val) {
+    currentCount = val;
+    updateHscDisplay();
+  }
+
+  function resetGreenAlarm() {
+    document.getElementById('led-green').classList.remove('on');
+  }
+
+  function updateHscDisplay() {
+    const ppr = parseInt(pprSelect.value, 10);
+    const mode = document.getElementById('hsc-phase-mode').value;
+    const effectivePpr = mode === 'ab4' ? ppr * 4 : ppr;
+    const rv = parseInt(document.getElementById('hsc-rv').value, 10) || 1500;
+
+    document.getElementById('hsc-cv').textContent = currentCount;
+    document.getElementById('hsc-revs').textContent = `Voltes completes (${effectivePpr} polsos/volta): ${(currentCount / effectivePpr).toFixed(2)} voltes`;
+    document.getElementById('tia-rv').textContent = rv;
+
+    // Comparadors del PDF (pàg. 61-62):
+    // %Q0.0 Vermella: 0 <= %ID1000 <= 750
+    // %Q0.1 Groga (IN_RANGE): 751 <= %ID1000 <= 1500
+    document.getElementById('led-red').classList.toggle('on', currentCount >= 0 && currentCount <= 750);
+    document.getElementById('led-yellow').classList.toggle('on', currentCount >= 751 && currentCount <= 1500);
+  }
+
+  document.getElementById('hsc-rv').addEventListener('input', updateHscDisplay);
+  document.getElementById('hsc-phase-mode').addEventListener('change', updateHscDisplay);
+
+  // ==================== PESTANYA 3: LABORATORI DE REPTES ====================
+  let qIndex = 0;
+  let score = 0;
+  let total = 0;
+  let answeredCurrent = false;
+  let currentChallenge = null;
+
+  function generateChallenge() {
+    qIndex++;
+    answeredCurrent = false;
+    document.getElementById('q-num').textContent = qIndex;
+    document.getElementById('q-user-ans').value = '';
+    const fb = document.getElementById('q-feedback');
+    fb.style.display = 'none';
+
+    const type = qIndex % 4;
+    if (type === 1) {
+      // Càlcul de freqüència F = (Polsos * rpm) / 60
+      const ppr = [300, 600, 1000, 1200][Math.floor(Math.random() * 4)];
+      const rpm = [900, 1500, 3000][Math.floor(Math.random() * 3)];
+      const freqKhz = (ppr * rpm) / 60000;
+      currentChallenge = {
+        cat: 'CÀLCUL DE FREQÜÈNCIA (F)',
+        prompt: `Tenim un encoder incremental de <strong>${ppr} polsos/volta</strong> acoblat a un motor que gira a <strong>${rpm} rpm</strong>. Quina freqüència en <strong>kHz</strong> rebrà l'entrada ràpida del S7-1200?`,
+        unit: 'kHz',
+        answer: freqKhz,
+        tol: 0.1,
+        explanation: `Aplicant la fórmula del temari:<br>F = (Polsos × rpm) / 60 = (${ppr} × ${rpm}) / 60 = <strong>${freqKhz * 1000} Hz = ${freqKhz} kHz</strong>.`
+      };
+    } else if (type === 2) {
+      // Polsos totals i quadratura x4
+      const ppr = [250, 500, 600, 1000][Math.floor(Math.random() * 4)];
+      const voltes = [2, 3, 5][Math.floor(Math.random() * 3)];
+      const totalPulses = ppr * voltes * 4;
+      currentChallenge = {
+        cat: 'COMPTADOR A/B QUÀDRUPLE (x4)',
+        prompt: `Configurem el <strong>HSC1</strong> en fase de servei <strong>Comptador A/B Quàdruple</strong> amb un encoder de <strong>${ppr} polsos/volta</strong>. Si l'eix fa exactament <strong>${voltes} voltes completes</strong> en sentit ascendent des de 0, quin valor marcarà <code>%ID1000</code>?`,
+        unit: 'polsos (DInt)',
+        answer: totalPulses,
+        tol: 0,
+        explanation: `En mode <strong>A/B Quàdruple</strong> el PLC compta els 4 flancs (ascendent i descendent d'A i de B) per cada cicle:<br>${ppr} polsos/volta × 4 × ${voltes} voltes = <strong>${totalPulses}</strong>.`
+      };
+    } else if (type === 3) {
+      // Adreça predeterminada HSC1..HSC6
+      const hscNum = [1, 2, 3, 4, 5, 6][Math.floor(Math.random() * 6)];
+      const idAddr = 1000 + (hscNum - 1) * 4;
+      currentChallenge = {
+        cat: 'ADREÇAMENT DE MEMÒRIA S7-1200',
+        prompt: `Segons la taula de configuració predeterminada del Siemens S7-1200, quin número d'adreça <code>%ID</code> (doble paraula <code>DInt</code>) té assignat per defecte el comptador ràpid <strong>HSC${hscNum}</strong>? <em>(Escriu només el número, ex: 1000)</em>.`,
+        unit: '(%ID...)',
+        answer: idAddr,
+        tol: 0,
+        explanation: `Cada HSC ocupa 4 bytes (un <code>DInt</code>) començant a <code>%ID1000</code>:<br>HSC1 = %ID1000, HSC2 = %ID1004, HSC3 = %ID1008... Per tant, <strong>HSC${hscNum} = %ID${idAddr}</strong>.`
+      };
+    } else {
+      // Sentit de gir en quadratura
+      currentChallenge = {
+        cat: 'QUADRATURA A/B · SENTIT DE GIR',
+        prompt: `Observem amb l'oscil·loscopi que cada vegada que es produeix un <strong>flanc ascendent al Canal A</strong>, el <strong>Canal B està a nivell baix (0)</strong> i el comptador compta de manera ascendent. Quin valor (<strong>1</strong> o <strong>-1</strong>) retorna <code>NewDirection</code> per a aquest sentit ascendent?`,
+        unit: '(1 o -1)',
+        answer: 1,
+        tol: 0,
+        explanation: `A l'estructura <code>HSC_Count</code> del bloc <code>CTRL_HSC_EXT</code>, el valor <strong>1</strong> indica sentit de comptatge <strong>ascendent</strong> i <strong>-1</strong> indica sentit descendent.`
+      };
+    }
+
+    document.getElementById('q-category').textContent = currentChallenge.cat;
+    document.getElementById('q-prompt').innerHTML = currentChallenge.prompt;
+    document.getElementById('q-ans-unit').textContent = currentChallenge.unit;
+  }
+
+  function checkChallenge() {
+    if (answeredCurrent) return;
+    const raw = document.getElementById('q-user-ans').value.replace(',', '.');
+    const userVal = parseFloat(raw);
+    if (isNaN(userVal)) return;
+
+    answeredCurrent = true;
+    total++;
+    const isOk = Math.abs(userVal - currentChallenge.answer) <= currentChallenge.tol;
+    if (isOk) score++;
+
+    document.getElementById('q-score').textContent = score;
+    document.getElementById('q-total').textContent = total;
+
+    const fb = document.getElementById('q-feedback');
+    fb.style.display = 'block';
+    if (isOk) {
+      fb.style.background = 'rgba(34, 197, 94, 0.15)';
+      fb.style.border = '1px solid rgba(34, 197, 94, 0.45)';
+      fb.innerHTML = `<strong style="color:#86efac;">✔ Correcte!</strong><br><div style="margin-top:0.4rem;">${currentChallenge.explanation}</div>`;
+    } else {
+      fb.style.background = 'rgba(239, 68, 68, 0.15)';
+      fb.style.border = '1px solid rgba(239, 68, 68, 0.45)';
+      fb.innerHTML = `<strong style="color:#fca5a5;">✘ No és correcte (Resposta esperada: ${currentChallenge.answer})</strong><br><div style="margin-top:0.4rem;">${currentChallenge.explanation}</div>`;
+    }
+  }
+
+  function nextChallenge() {
+    generateChallenge();
+  }
+
+  // Inicialització
+  updateEncoderCalc();
+  updateGateUI();
+  updateHscDisplay();
+  generateChallenge();
+  requestAnimationFrame(drawDiscAndScope);
+</script>
+
+</body>
+</html>

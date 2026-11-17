@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador Senyals Analògics S7-1200 — Mòdul 0965</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-alt: #263349;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --siemens: #009999;
+      --siemens-dark: #007373;
+      --accent: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 3rem;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0b2239 0%, #0f172a 100%);
+      border-bottom: 2px solid var(--siemens);
+      padding: 1.25rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+    }
+
+    .badge {
+      background: var(--siemens);
+      color: #fff;
+      font-weight: 700;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    nav.tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    nav.tabs button {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.6rem 1.1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    nav.tabs button:hover {
+      color: var(--text);
+      border-color: var(--siemens);
+    }
+
+    nav.tabs button.active {
+      background: var(--siemens);
+      color: #fff;
+      border-color: var(--siemens);
+    }
+
+    main {
+      max-width: 1280px;
+      margin: 1.5rem auto;
+      padding: 0 1.25rem;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Guia didàctica */
+    .guide-box {
+      background: rgba(0, 153, 153, 0.1);
+      border: 1px solid var(--siemens);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .guide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .guide-header h2 {
+      font-size: 1rem;
+      color: #5eead4;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .guide-toggle {
+      background: rgba(0, 153, 153, 0.25);
+      border: 1px solid var(--siemens);
+      color: #ccfbf1;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .guide-body {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      color: #e2e8f0;
+    }
+
+    .guide-body.collapsed {
+      display: none;
+    }
+
+    .guide-body ul {
+      margin-left: 1.25rem;
+      margin-top: 0.4rem;
+    }
+
+    .guide-body li {
+      margin-bottom: 0.25rem;
+    }
+
+    /* Controls superiors */
+    .control-bar {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      align-items: end;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    select, input[type="number"] {
+      width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.95rem;
+    }
+
+    select:focus, input[type="number"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .custom-range-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .slider-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .slider-top {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+    }
+
+    .slider-top input[type="number"] {
+      width: 120px;
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 1.05rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--siemens);
+      cursor: pointer;
+      height: 8px;
+    }
+
+    .quick-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .btn {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.45rem 0.75rem;
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+    }
+
+    .btn.danger {
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+    }
+
+    .btn.danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+
+    .btn.warn {
+      border-color: rgba(245, 158, 11, 0.5);
+      color: #fcd34d;
+    }
+
+    .btn.warn:hover {
+      background: rgba(245, 158, 11, 0.2);
+    }
+
+    .btn.primary {
+      background: var(--siemens);
+      border-color: var(--siemens);
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      background: var(--siemens-dark);
+    }
+
+    /* Pipeline de 4 etapes */
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(275px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stage {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .stage-num {
+      display: inline-block;
+      background: var(--panel-alt);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      margin-bottom: 0.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .stage h3 {
+      font-size: 1.02rem;
+      margin-bottom: 0.65rem;
+      color: #fff;
+    }
+
+    .big-readout {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      text-align: center;
+      margin: 0.5rem 0;
+    }
+
+    .big-readout .val {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .big-readout .lbl {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+    }
+
+    .kv-list {
+      list-style: none;
+      font-size: 0.86rem;
+      margin-top: 0.5rem;
+    }
+
+    .kv-list li {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+    }
+
+    .kv-list li:last-child {
+      border-bottom: none;
+    }
+
+    .mono {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-weight: 600;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-align: center;
+      margin-top: 0.4rem;
+    }
+
+    .status-ok { background: rgba(34, 197, 94, 0.18); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .status-warn { background: rgba(245, 158, 11, 0.18); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .status-err { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+    /* Blocs TIA Portal */
+    .tia-section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .tia-section h3 {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      color: #e2e8f0;
+    }
+
+    .tia-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .tia-block {
+      background: #e2e8f0;
+      color: #0f172a;
+      border: 2px solid #64748b;
+      border-radius: 6px;
+      width: 270px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.82rem;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    .tia-block-header {
+      background: #3b82f6;
+      color: #fff;
+      font-weight: 700;
+      text-align: center;
+      padding: 0.35rem;
+      border-bottom: 2px solid #1d4ed8;
+    }
+
+    .tia-block-header.scale {
+      background: #0d9488;
+      border-bottom-color: #0f766e;
+    }
+
+    .tia-block-sub {
+      background: #cbd5e1;
+      text-align: center;
+      font-size: 0.74rem;
+      padding: 0.15rem;
+      color: #334155;
+      border-bottom: 1px solid #94a3b8;
+    }
+
+    .tia-pins {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 0.5rem 0.6rem;
+      gap: 0.35rem;
+    }
+
+    .pin-left {
+      text-align: left;
+    }
+
+    .pin-right {
+      text-align: right;
+    }
+
+    .pin-val {
+      display: inline-block;
+      background: #fff;
+      border: 1px solid #94a3b8;
+      padding: 0.05rem 0.35rem;
+      border-radius: 3px;
+      font-weight: 700;
+      color: #0369a1;
+    }
+
+    .tia-wire {
+      font-size: 1.5rem;
+      color: var(--ok);
+      font-weight: 700;
+    }
+
+    /* Comparadors */
+    .comp-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.85rem;
+      margin-top: 0.75rem;
+    }
+
+    .led-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .led {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #334155;
+      border: 2px solid #475569;
+      flex-shrink: 0;
+    }
+
+    .led.on {
+      background: var(--ok);
+      border-color: #bbf7d0;
+      box-shadow: 0 0 12px var(--ok);
+    }
+
+    /* Esquema shunt SVG */
+    .shunt-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+
+    /* Reptes */
+    .challenge-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .score-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .q-text {
+      font-size: 1.05rem;
+      margin-bottom: 1.25rem;
+      color: #f1f5f9;
+    }
+
+    .ans-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .ans-row input {
+      max-width: 220px;
+    }
+
+    .feedback-box {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      display: none;
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="badge">EEB0 · MP 0965</span>
+    <div>
+      <h1>Simulador de Senyals Analògics — Siemens S7-1200</h1>
+      <div class="subtitle">Sistemes Programables Avançats · Transductors, Llei d'Ohm, %IW64 / %QW64 i TIA Portal</div>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="tab-in">1. Entrades Analògiques (%IW64)</button>
+    <button class="tab-btn" data-tab="tab-out">2. Sortides Analògiques (%QW64)</button>
+    <button class="tab-btn" data-tab="tab-quiz">3. Laboratori de Reptes</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ==================== PESTANYA 1: ENTRADES ANALÒGIQUES ==================== -->
+  <section id="tab-in" class="tab-content active">
+    <div class="guide-box">
+      <div class="guide-header" onclick="toggleGuide('guide-in', this)">
+        <h2>📘 Què fem en aquesta pestanya? El viatge d'una entrada analògica (%IW64)</h2>
+        <span class="guide-toggle">Amagar guia</span>
+      </div>
+      <div id="guide-in" class="guide-body">
+        <p>Aquí pots observar com una magnitud física real es transforma fins arribar al programa del PLC en <strong>4 etapes</strong>:</p>
+        <ul>
+          <li><strong>Etapa 1 (Sensor):</strong> Tria un sensor del temari i modifica la magnitud física amb el lliscador o escrivint el valor directe.</li>
+          <li><strong>Etapa 2 (Elèctrica):</strong> Si el sensor és de <strong>4–20 mA</strong>, observa com la resistència <em>shunt</em> de <strong>500 Ω</strong> converteix el corrent en <strong>2–10 V</strong> ($V = I \cdot R$) per a les entrades de tensió de la CPU.</li>
+          <li><strong>Etapa 3 (Convertidor A/D):</strong> El PLC digitalitza la tensió en un enter (<code>Int</code>) a <code>%IW64</code> dins l'escala Siemens <strong>0 a 27648</strong> (on 2 V = 4 mA equivalen a <strong>5530</strong>).</li>
+          <li><strong>Etapa 4 (TIA Portal):</strong> <code>NORM_X</code> passa l'enter a un valor normalitzat <code>0.0–1.0</code> i <code>SCALE_X</code> recupera les unitats d'enginyeria reals.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="control-bar">
+      <div class="field">
+        <label for="sensor-select">1. Selecciona el transductor / sensor</label>
+        <select id="sensor-select">
+          <option value="ta3130">IFM TA3130 · Temperatura (0 a 140 °C · 4-20 mA)</option>
+          <option value="pi1696">IFM PI1696 · Pressió calibrada (200 a 2000 mbar · 4-20 mA)</option>
+          <option value="rpm">Transductor Velocitat (500 a 1500 rpm · 0-10 V)</option>
+          <option value="temp760">Forn Industrial (0 a 760 °C · 0-10 V)</option>
+          <option value="custom">Sensor Personalitzat...</option>
+        </select>
+        <div id="custom-box" class="custom-range-grid" style="display:none;">
+          <div>
+            <label style="font-size:0.7rem;">Mínim</label>
+            <input type="number" id="cust-min" value="0" step="any" />
+          </div>
+          <div>
+            <label style="font-size:0.7rem;">Màxim</label>
+            <input type="number" id="cust-max" value="100" step="any" />
+          </div>
+          <div>
+            <label style="font-size:0.7rem;">Senyal</label>
+            <select id="cust-type">
+              <option value="4-20">4-20 mA</option>
+              <option value="0-10">0-10 V</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="field slider-wrap">
+        <label for="in-phys-num">2. Valor físic mesurat (<span id="in-unit-lbl">°C</span>)</label>
+        <div class="slider-top">
+          <input type="number" id="in-phys-num" step="0.1" value="70" />
+          <span id="in-range-hint" style="font-size:0.82rem; color:var(--muted);">Rang: 0 – 140 °C</span>
+        </div>
+        <input type="range" id="in-phys-slider" min="0" max="140" step="0.1" value="70" />
+      </div>
+
+      <div class="field">
+        <label>3. Proves ràpides i simulació d'avaries</label>
+        <div class="quick-btns">
+          <button type="button" class="btn" onclick="setInPercent(0)">0% (Mín)</button>
+          <button type="button" class="btn" onclick="setInPercent(0.5)">50%</button>
+          <button type="button" class="btn" onclick="setInPercent(1)">100% (Màx)</button>
+          <button type="button" class="btn danger" onclick="simulateFault('wire')">Cable trencat (0 mA / 0 V)</button>
+          <button type="button" class="btn warn" onclick="simulateFault('over')">Sobreimpuls (+10%)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 Etapes -->
+    <div class="pipeline">
+      <!-- Etapa 1 -->
+      <div class="stage">
+        <div>
+          <span class="stage-num">ETAPA 1 · MÓN FÍSIC</span>
+          <h3>Magnitud real al procés</h3>
+          <div class="big-readout">
+            <div class="val" id="st1-val">70.0 °C</div>
+            <div class="lbl" id="st1-pct">50.0% de l'escala del sensor</div>
+          </div>
+        </div>
+        <ul class="kv-list">
+          <li><span>Sensor:</span> <span class="mono" id="st1-name">IFM TA3130</span></li>
+          <li><span>Rang físic:</span> <span class="mono" id="st1-range">0 .. 140 °C</span></li>
+          <li><span>Sortida sensor:</span> <span class="mono" id="st1-sig">4 .. 20 mA</span></li>
+        </ul>
+      </div>
+
+      <!-- Etapa 2 -->
+      <div class="stage">
+        <div>
+          <span class="stage-num">ETAPA 2 · MÓN ELÈCTRIC</span>
+          <h3>Transductor i Resistència Shunt</h3>
+          <div class="big-readout">
+            <div class="val" id="st2-volt">6.00 V</div>
+            <div class="lbl" id="st2-curr">Corrent llaç: 12.00 mA (R = 500 Ω)</div>
+          </div>
+          <div class="shunt-box" id="shunt-diagram">
+            <svg width="100%" height="68" viewBox="0 0 260 68">
+              <line x1="10" y1="16" x2="90" y2="16" stroke="#38bdf8" stroke-width="2"/>
+              <text x="14" y="12" fill="#94a3b8" font-size="10">Sensor 4-20mA</text>
+              <line x1="90" y1="16" x2="245" y2="16" stroke="#38bdf8" stroke-width="2"/>
+              <text x="200" y="12" fill="#5eead4" font-size="10" font-weight="bold">AI 0 (+)</text>
+              <!-- Resistència 500 Ohm en paral·lel -->
+              <line x1="140" y1="16" x2="140" y2="24" stroke="#f59e0b" stroke-width="2"/>
+              <rect x="132" y="24" width="16" height="22" fill="none" stroke="#f59e0b" stroke-width="2"/>
+              <line x1="140" y1="46" x2="140" y2="56" stroke="#f59e0b" stroke-width="2"/>
+              <text x="154" y="39" fill="#fcd34d" font-size="10" font-weight="bold">500 Ω</text>
+              <line x1="10" y1="56" x2="245" y2="56" stroke="#64748b" stroke-width="2"/>
+              <text x="195" y="66" fill="#94a3b8" font-size="10">2M (COM)</text>
+            </svg>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <span id="st2-status" class="status-pill status-ok">Senyal elèctric correcte (2–10 V)</span>
+        </div>
+      </div>
+
+      <!-- Etapa 3 -->
+      <div class="stage">
+        <div>
+          <span class="stage-num">ETAPA 3 · CONVERTIDOR A/D</span>
+          <h3>Paraula interna PLC (%IW64)</h3>
+          <div class="big-readout">
+            <div class="val" id="st3-int">16589</div>
+            <div class="lbl" id="st3-hex">Hex: 16#40CD · Tipus: Int (16 bits)</div>
+          </div>
+        </div>
+        <ul class="kv-list">
+          <li><span>Escala nominal:</span> <span class="mono" id="st3-nom">5530 .. 27648</span></li>
+          <li><span>Zona Siemens:</span> <span class="mono" id="st3-zone">Rang nominal</span></li>
+          <li><span>Resolució CPU:</span> <span class="mono">10 bits (0..27648)</span></li>
+        </ul>
+      </div>
+
+      <!-- Etapa 4 -->
+      <div class="stage">
+        <div>
+          <span class="stage-num">ETAPA 4 · ENGNYERIA (PLC)</span>
+          <h3>Valor escalat al programa</h3>
+          <div class="big-readout">
+            <div class="val" id="st4-real" style="color:var(--ok);">70.00 °C</div>
+            <div class="lbl" id="st4-norm">Normalitzat (NORM_X): 0.5000</div>
+          </div>
+        </div>
+        <ul class="kv-list">
+          <li><span>Variable programa:</span> <span class="mono">"Valor_Escalat" (Real)</span></li>
+          <li><span>Desviació / Error:</span> <span class="mono" id="st4-err">0.00</span></li>
+          <li><span>Estat diagnòstic:</span> <span class="mono" id="st4-diag">OK</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Blocs TIA Portal -->
+    <div class="tia-section">
+      <h3>Blocs de programació a TIA Portal (Ladder / FUP)</h3>
+      <div class="tia-flow">
+        <div class="tia-block">
+          <div class="tia-block-header">NORM_X</div>
+          <div class="tia-block-sub">Int to Real</div>
+          <div class="tia-pins">
+            <div class="pin-left">MIN: <span class="pin-val" id="tia-norm-min">5529.6</span></div>
+            <div class="pin-right">OUT: <span class="pin-val" id="tia-norm-out">0.500</span></div>
+            <div class="pin-left">VALUE: <span class="pin-val" id="tia-norm-val">16589</span></div>
+            <div class="pin-right"><small>%MD2 ("aux")</small></div>
+            <div class="pin-left">MAX: <span class="pin-val">27648</span></div>
+            <div class="pin-right"></div>
+          </div>
+        </div>
+
+        <div class="tia-wire">➔</div>
+
+        <div class="tia-block">
+          <div class="tia-block-header scale">SCALE_X</div>
+          <div class="tia-block-sub">Real to Real</div>
+          <div class="tia-pins">
+            <div class="pin-left">MIN: <span class="pin-val" id="tia-scale-min">0.0</span></div>
+            <div class="pin-right">OUT: <span class="pin-val" id="tia-scale-out">70.00</span></div>
+            <div class="pin-left">VALUE: <span class="pin-val" id="tia-scale-val">0.500</span></div>
+            <div class="pin-right"><small>%MD6 ("enginyeria")</small></div>
+            <div class="pin-left">MAX: <span class="pin-val" id="tia-scale-max">140.0</span></div>
+            <div class="pin-right"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Exemple de comparadors del PDF (pàg. 14-15) -->
+      <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border);">
+        <div style="font-size:0.88rem; color:var(--muted); margin-bottom:0.5rem;">
+          <strong>Exemple de comparació directa sobre <code>%IW64</code> (del temari):</strong> Activació de sortides digitals segons llindars enters.
+        </div>
+        <div class="comp-grid">
+          <div class="led-card">
+            <div id="led-q00" class="led"></div>
+            <div>
+              <div class="mono"><strong>%Q0.0</strong> (Nivell Baix)</div>
+              <div style="font-size:0.8rem; color:var(--muted);">Activa si <code>%IW64 ≤ 15000</code></div>
+            </div>
+          </div>
+          <div class="led-card">
+            <div id="led-q01" class="led"></div>
+            <div>
+              <div class="mono"><strong>%Q0.1</strong> (Nivell Mitjà · IN_RANGE)</div>
+              <div style="font-size:0.8rem; color:var(--muted);">Activa si <code>15001 .. 20000</code></div>
+            </div>
+          </div>
+          <div class="led-card">
+            <div id="led-q02" class="led"></div>
+            <div>
+              <div class="mono"><strong>%Q0.2</strong> (Nivell Alt)</div>
+              <div style="font-size:0.8rem; color:var(--muted);">Activa si <code>%IW64 > 20000</code></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== PESTANYA 2: SORTIDES ANALÒGIQUES ==================== -->
+  <section id="tab-out" class="tab-content">
+    <div class="guide-box">
+      <div class="guide-header" onclick="toggleGuide('guide-out', this)">
+        <h2>📗 Què fem en aquesta pestanya? Control d'un actuador per sortida analògica (%QW64)</h2>
+        <span class="guide-toggle">Amagar guia</span>
+      </div>
+      <div id="guide-out" class="guide-body">
+        <p>En una sortida analògica el procés va <strong>al revés que a l'entrada</strong>: partim d'una consigna numèrica al programa (ex. velocitat d'un motor o obertura d'una vàlvula) i volem que el PLC generi un senyal elèctric proporcional a <code>%QW64</code>:</p>
+        <ul>
+          <li><strong>Pas 1 (<code>NORM_X</code>):</strong> Normalitzem la consigna d'enginyeria (ex. <code>0–1500 rpm</code>) a un factor decimal de <code>0.0</code> a <code>1.0</code>.</li>
+          <li><strong>Pas 2 (<code>SCALE_X</code>):</strong> Multipliquem aquest factor per <strong>27648</strong> per obtenir l'enter que escrivim a <code>%QW64</code>.</li>
+          <li><strong>Pas 3 (Convertidor D/A):</strong> La targeta analògica transforma l'enter en corrent (<code>0–20 mA</code> o <code>4–20 mA</code>) o tensió (<code>0–10 V</code>) cap a l'actuador.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="control-bar">
+      <div class="field">
+        <label for="actuator-select">1. Actuador i tipus de sortida (%QW64)</label>
+        <select id="actuator-select">
+          <option value="vfd">Variador de Freqüència (0 a 1500 rpm · Sortida 0-20 mA)</option>
+          <option value="valve">Vàlvula Proporcional (0 a 100 % obertura · Sortida 4-20 mA)</option>
+          <option value="heater">Resistència Calefactora (0 a 100 % potència · Sortida 0-10 V)</option>
+        </select>
+      </div>
+
+      <div class="field slider-wrap">
+        <label for="out-cons-num">2. Consigna desitjada al programa (<span id="out-unit-lbl">rpm</span>)</label>
+        <div class="slider-top">
+          <input type="number" id="out-cons-num" step="1" value="750" />
+          <span id="out-range-hint" style="font-size:0.82rem; color:var(--muted);">Rang: 0 – 1500 rpm</span>
+        </div>
+        <input type="range" id="out-cons-slider" min="0" max="1500" step="1" value="750" />
+      </div>
+
+      <div class="field">
+        <label>3. Consignes ràpides</label>
+        <div class="quick-btns">
+          <button type="button" class="btn" onclick="setOutPercent(0)">0%</button>
+          <button type="button" class="btn" onclick="setOutPercent(0.25)">25%</button>
+          <button type="button" class="btn" onclick="setOutPercent(0.5)">50%</button>
+          <button type="button" class="btn" onclick="setOutPercent(0.75)">75%</button>
+          <button type="button" class="btn" onclick="setOutPercent(1)">100%</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline">
+      <div class="stage">
+        <div>
+          <span class="stage-num">PAS 1 · CONSIGNA HMI / PROGRAMA</span>
+          <h3>Valor d'enginyeria</h3>
+          <div class="big-readout">
+            <div class="val" id="out-st1-val">750 rpm</div>
+            <div class="lbl" id="out-st1-pct">50.0% de consigna</div>
+          </div>
+        </div>
+        <ul class="kv-list">
+          <li><span>Actuador:</span> <span class="mono" id="out-st1-name">Variador Freq.</span></li>
+          <li><span>Rang consigna:</span> <span class="mono" id="out-st1-range">0 .. 1500 rpm</span></li>
+        </ul>
+      </div>
+
+      <div class="stage">
+        <div>
+          <span class="stage-num">PAS 2 · PARAULA DE SORTIDA</span>
+          <h3>Valor enviat a %QW64</h3>
+          <div class="big-readout">
+            <div class="val" id="out-st2-qw">13824</div>
+            <div class="lbl" id="out-st2-hex">Hex: 16#3600 · Tipus: Int</div>
+          </div>
+        </div>
+        <ul class="kv-list">
+          <li><span>Sortida NORM_X:</span> <span class="mono" id="out-st2-norm">0.5000</span></li>
+          <li><span>Rang paraula:</span> <span class="mono" id="out-st2-wrange">0 .. 27648</span></li>
+        </ul>
+      </div>
+
+      <div class="stage">
+        <div>
+          <span class="stage-num">PAS 3 · CONVERTIDOR D/A</span>
+          <h3>Senyal físic als borns</h3>
+          <div class="big-readout">
+            <div class="val" id="out-st3-sig" style="color:var(--ok);">10.00 mA</div>
+            <div class="lbl" id="out-st3-type">Sortida analògica 0-20 mA</div>
+          </div>
+        </div>
+        <ul class="kv-list">
+          <li><span>Estat actuador:</span> <span class="mono" id="out-st3-act">Motor al 50%</span></li>
+          <li><span>Càrrega màx.:</span> <span class="mono">≤ 500 Ω (en corrent)</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tia-section">
+      <h3>Blocs inversos a TIA Portal per a Sortida Analògica (%QW64)</h3>
+      <div class="tia-flow">
+        <div class="tia-block">
+          <div class="tia-block-header">NORM_X</div>
+          <div class="tia-block-sub">Real to Real</div>
+          <div class="tia-pins">
+            <div class="pin-left">MIN: <span class="pin-val" id="out-tia-nmin">0.0</span></div>
+            <div class="pin-right">OUT: <span class="pin-val" id="out-tia-nout">0.500</span></div>
+            <div class="pin-left">VALUE: <span class="pin-val" id="out-tia-nval">750.0</span></div>
+            <div class="pin-right"><small>%MD60 ("Norm_val")</small></div>
+            <div class="pin-left">MAX: <span class="pin-val" id="out-tia-nmax">1500.0</span></div>
+            <div class="pin-right"></div>
+          </div>
+        </div>
+
+        <div class="tia-wire">➔</div>
+
+        <div class="tia-block">
+          <div class="tia-block-header scale">SCALE_X</div>
+          <div class="tia-block-sub">Real to Int</div>
+          <div class="tia-pins">
+            <div class="pin-left">MIN: <span class="pin-val" id="out-tia-smin">0</span></div>
+            <div class="pin-right">OUT: <span class="pin-val" id="out-tia-sout">13824</span></div>
+            <div class="pin-left">VALUE: <span class="pin-val" id="out-tia-sval">0.500</span></div>
+            <div class="pin-right"><small><strong>%QW64</strong></small></div>
+            <div class="pin-left">MAX: <span class="pin-val">27648</span></div>
+            <div class="pin-right"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== PESTANYA 3: LABORATORI DE REPTES ==================== -->
+  <section id="tab-quiz" class="tab-content">
+    <div class="guide-box">
+      <div class="guide-header" onclick="toggleGuide('guide-quiz', this)">
+        <h2>📙 Què fem en aquesta pestanya? Entrenament i diagnòstic d'avaries</h2>
+        <span class="guide-toggle">Amagar guia</span>
+      </div>
+      <div id="guide-quiz" class="guide-body">
+        <p>Posa a prova el que has après resolent casos pràctics aleatoris basats en el temari del mòdul 0965:</p>
+        <ul>
+          <li>Calcula el valor enter que ha de marcar <code>%IW64</code> a partir d'una magnitud física real.</li>
+          <li>Aplica la Llei d'Ohm ($V = I \cdot R$) per determinar la tensió en borns amb una resistència <em>shunt</em> de <strong>500 Ω</strong>.</li>
+          <li>Calcula la paraula de sortida a <code>%QW64</code> per governar un variador de freqüència.</li>
+          <li>Identifica avaries de cable trencat gràcies al "zero viu" de <strong>4 mA</strong>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="challenge-card">
+      <div class="score-bar">
+        <div>
+          <span class="badge" id="q-category">CÀLCUL D'ENTRADA</span>
+          <span style="margin-left:0.5rem; font-size:0.85rem; color:var(--muted);">Repte #<span id="q-num">1</span></span>
+        </div>
+        <div class="mono" style="color:var(--ok);">Encerts: <span id="q-score">0</span> / <span id="q-total">0</span></div>
+      </div>
+
+      <div class="q-text" id="q-prompt">Carregant repte...</div>
+
+      <div class="ans-row" id="q-input-area">
+        <input type="number" id="q-user-ans" step="any" placeholder="Escriu la teva resposta..." />
+        <span class="mono" id="q-ans-unit" style="color:var(--muted);"></span>
+        <button type="button" class="btn primary" onclick="checkChallenge()">Comprovar resposta</button>
+        <button type="button" class="btn" onclick="nextChallenge()">Següent repte ➔</button>
+      </div>
+
+      <div id="q-feedback" class="feedback-box"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+  // ==================== NAVEGACIÓ I GUIES ====================
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  function toggleGuide(id, headerEl) {
+    const body = document.getElementById(id);
+    const pill = headerEl.querySelector('.guide-toggle');
+    const isCollapsed = body.classList.toggle('collapsed');
+    pill.textContent = isCollapsed ? 'Mostrar guia' : 'Amagar guia';
+  }
+
+  // ==================== PESTANYA 1: ENTRADES ANALÒGIQUES ====================
+  const SENSORS = {
+    ta3130: { name: 'IFM TA3130', min: 0, max: 140, unit: '°C', type: '4-20', step: 0.1 },
+    pi1696: { name: 'IFM PI1696', min: 200, max: 2000, unit: 'mbar', type: '4-20', step: 1 },
+    rpm:    { name: 'Transductor RPM', min: 500, max: 1500, unit: 'rpm', type: '0-10', step: 1 },
+    temp760:{ name: 'Sonda Forn', min: 0, max: 760, unit: '°C', type: '0-10', step: 1 },
+    custom: { name: 'Sensor Custom', min: 0, max: 100, unit: 'u.', type: '4-20', step: 0.1 }
+  };
+
+  let faultMode = null; // null | 'wire' | 'over'
+
+  const sensorSelect = document.getElementById('sensor-select');
+  const inPhysNum = document.getElementById('in-phys-num');
+  const inPhysSlider = document.getElementById('in-phys-slider');
+
+  function getActiveSensor() {
+    const key = sensorSelect.value;
+    if (key !== 'custom') return SENSORS[key];
+    const cMin = parseFloat(document.getElementById('cust-min').value);
+    const cMax = parseFloat(document.getElementById('cust-max').value);
+    const cType = document.getElementById('cust-type').value;
+    return {
+      name: 'Sensor Custom',
+      min: isNaN(cMin) ? 0 : cMin,
+      max: isNaN(cMax) || cMax <= cMin ? (isNaN(cMin) ? 100 : cMin + 100) : cMax,
+      unit: 'u.',
+      type: cType,
+      step: 0.1
+    };
+  }
+
+  function syncInRangeControls(resetMid = true) {
+    const s = getActiveSensor();
+    document.getElementById('custom-box').style.display = sensorSelect.value === 'custom' ? 'grid' : 'none';
+    document.getElementById('in-unit-lbl').textContent = s.unit;
+    document.getElementById('in-range-hint').textContent = `Rang: ${s.min} – ${s.max} ${s.unit}`;
+
+    inPhysSlider.min = s.min;
+    inPhysSlider.max = s.max;
+    inPhysSlider.step = s.step;
+    inPhysNum.step = s.step;
+
+    if (resetMid) {
+      const mid = Number(((s.min + s.max) / 2).toFixed(2));
+      inPhysSlider.value = mid;
+      inPhysNum.value = mid;
+    }
+    faultMode = null;
+    updateInputSim();
+  }
+
+  sensorSelect.addEventListener('change', () => syncInRangeControls(true));
+  ['cust-min', 'cust-max', 'cust-type'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => syncInRangeControls(true));
+  });
+
+  // Sincronització bidireccional fluida entre slider i input numèric
+  inPhysSlider.addEventListener('input', () => {
+    faultMode = null;
+    inPhysNum.value = inPhysSlider.value;
+    updateInputSim();
+  });
+
+  inPhysNum.addEventListener('input', () => {
+    faultMode = null;
+    const raw = inPhysNum.value.replace(',', '.');
+    const val = parseFloat(raw);
+    if (!isNaN(val)) {
+      const s = getActiveSensor();
+      const clampedForSlider = Math.min(Math.max(val, s.min), s.max);
+      inPhysSlider.value = clampedForSlider;
+      updateInputSim(val);
+    }
+  });
+
+  function setInPercent(pct) {
+    faultMode = null;
+    const s = getActiveSensor();
+    const val = Number((s.min + pct * (s.max - s.min)).toFixed(2));
+    inPhysSlider.value = val;
+    inPhysNum.value = val;
+    updateInputSim(val);
+  }
+
+  function simulateFault(type) {
+    faultMode = type;
+    const s = getActiveSensor();
+    if (type === 'wire') {
+      inPhysSlider.value = s.min;
+      inPhysNum.value = s.min;
+    } else if (type === 'over') {
+      const overVal = Number((s.max + 0.1 * (s.max - s.min)).toFixed(2));
+      inPhysSlider.value = s.max;
+      inPhysNum.value = overVal;
+    }
+    updateInputSim();
+  }
+
+  function updateInputSim(overrideVal = null) {
+    const s = getActiveSensor();
+    let physVal = overrideVal !== null ? overrideVal : parseFloat(inPhysNum.value.replace(',', '.'));
+    if (isNaN(physVal)) physVal = s.min;
+
+    let ratio = (physVal - s.min) / (s.max - s.min);
+    let currentMa = null;
+    let voltageV = 0;
+
+    if (faultMode === 'wire') {
+      currentMa = s.type === '4-20' ? 0 : null;
+      voltageV = 0;
+    } else {
+      if (s.type === '4-20') {
+        currentMa = 4 + ratio * 16;
+        if (currentMa < 0) currentMa = 0;
+        if (currentMa > 23.7) currentMa = 23.7;
+        voltageV = currentMa * 0.5; // 500 Ohm => V = I(mA) * 0.5
+      } else {
+        voltageV = ratio * 10;
+        if (voltageV < 0) voltageV = 0;
+        if (voltageV > 11.852) voltageV = 11.852;
+      }
+    }
+
+    // Càlcul paraula A/D Siemens (10V = 27648)
+    let iwRaw = Math.round((voltageV / 10) * 27648);
+    if (iwRaw > 32767) iwRaw = 32767;
+    if (iwRaw < 0) iwRaw = 0;
+
+    // Paràmetres NORM_X i SCALE_X
+    const normMin = s.type === '4-20' ? 5529.6 : 0.0;
+    const normMax = 27648.0;
+    const normOut = (iwRaw - normMin) / (normMax - normMin);
+    const scaleOut = normOut * (s.max - s.min) + s.min;
+
+    // Actualitzar Etapa 1
+    document.getElementById('st1-val').textContent = faultMode === 'wire' ? 'SENSE LECTURA' : `${physVal.toFixed(1)} ${s.unit}`;
+    document.getElementById('st1-pct').textContent = faultMode === 'wire' ? 'Circuit obert / Sensor desconnectat' : `${(ratio * 100).toFixed(1)}% de l'escala del sensor`;
+    document.getElementById('st1-name').textContent = s.name;
+    document.getElementById('st1-range').textContent = `${s.min} .. ${s.max} ${s.unit}`;
+    document.getElementById('st1-sig').textContent = s.type === '4-20' ? '4 .. 20 mA' : '0 .. 10 V';
+
+    // Actualitzar Etapa 2
+    document.getElementById('st2-volt').textContent = `${voltageV.toFixed(2)} V`;
+    document.getElementById('shunt-diagram').style.display = s.type === '4-20' ? 'block' : 'none';
+    const st2Status = document.getElementById('st2-status');
+    if (s.type === '4-20') {
+      document.getElementById('st2-curr').textContent = `Corrent llaç: ${currentMa.toFixed(2)} mA (R = 500 Ω)`;
+      if (currentMa < 3.6) {
+        st2Status.className = 'status-pill status-err';
+        st2Status.textContent = 'AVARIA: Corrent < 4 mA (Cable trencat / Llaç obert)';
+      } else if (currentMa > 20.05) {
+        st2Status.className = 'status-pill status-warn';
+        st2Status.textContent = 'ALERTA: Sobreimpuls (> 20 mA / > 10 V)';
+      } else {
+        st2Status.className = 'status-pill status-ok';
+        st2Status.textContent = 'Senyal elèctric correcte (2–10 V)';
+      }
+    } else {
+      document.getElementById('st2-curr').textContent = `Connexió directa en tensió (0–10 V)`;
+      if (faultMode === 'wire') {
+        st2Status.className = 'status-pill status-err';
+        st2Status.textContent = '0 V (Indistingible de 0% en senyal 0-10 V!)';
+      } else if (voltageV > 10.02) {
+        st2Status.className = 'status-pill status-warn';
+        st2Status.textContent = 'ALERTA: Sobreimpuls (> 10 V)';
+      } else {
+        st2Status.className = 'status-pill status-ok';
+        st2Status.textContent = 'Senyal elèctric correcte (0–10 V)';
+      }
+    }
+
+    // Actualitzar Etapa 3
+    document.getElementById('st3-int').textContent = iwRaw;
+    document.getElementById('st3-hex').textContent = `Hex: 16#${iwRaw.toString(16).toUpperCase().padStart(4, '0')} · Tipus: Int`;
+    document.getElementById('st3-nom').textContent = s.type === '4-20' ? '5530 .. 27648' : '0 .. 27648';
+
+    let zoneText = 'Rang nominal';
+    if (s.type === '4-20' && iwRaw < 4976) zoneText = 'Sota rang (< 3.6 mA · Error)';
+    else if (iwRaw > 32511) zoneText = 'Desbordament (Overflow)';
+    else if (iwRaw > 27648) zoneText = 'Sobreimpuls (27649..32511)';
+    document.getElementById('st3-zone').textContent = zoneText;
+
+    // Actualitzar Etapa 4
+    document.getElementById('st4-real').textContent = `${scaleOut.toFixed(2)} ${s.unit}`;
+    document.getElementById('st4-norm').textContent = `Normalitzat (NORM_X): ${normOut.toFixed(4)}`;
+    const errDiff = faultMode === 'wire' ? 0 : Math.abs(scaleOut - physVal);
+    document.getElementById('st4-err').textContent = `${errDiff.toFixed(2)} ${s.unit}`;
+    document.getElementById('st4-diag').textContent = (s.type === '4-20' && iwRaw < 4976) ? 'FALLADA LLAÇ' : (iwRaw > 27648 ? 'SOBREIMPULS' : 'OK');
+
+    // Actualitzar blocs TIA Portal
+    document.getElementById('tia-norm-min').textContent = s.type === '4-20' ? '5529.6' : '0.0';
+    document.getElementById('tia-norm-val').textContent = iwRaw;
+    document.getElementById('tia-norm-out').textContent = normOut.toFixed(3);
+
+    document.getElementById('tia-scale-min').textContent = s.min.toFixed(1);
+    document.getElementById('tia-scale-val').textContent = normOut.toFixed(3);
+    document.getElementById('tia-scale-max').textContent = s.max.toFixed(1);
+    document.getElementById('tia-scale-out').textContent = scaleOut.toFixed(2);
+
+    // Actualitzar LEDs comparadors (exemple temari: <=15000, 15001..20000, >20000)
+    document.getElementById('led-q00').classList.toggle('on', iwRaw <= 15000);
+    document.getElementById('led-q01').classList.toggle('on', iwRaw >= 15001 && iwRaw <= 20000);
+    document.getElementById('led-q02').classList.toggle('on', iwRaw > 20000);
+  }
+
+  // ==================== PESTANYA 2: SORTIDES ANALÒGIQUES (%QW64) ====================
+  const ACTUATORS = {
+    vfd:    { name: 'Variador Freqüència', min: 0, max: 1500, unit: 'rpm', sigType: '0-20mA', step: 1 },
+    valve:  { name: 'Vàlvula Proporcional', min: 0, max: 100, unit: '%', sigType: '4-20mA', step: 0.5 },
+    heater: { name: 'Calefactor Proporcional', min: 0, max: 100, unit: '%', sigType: '0-10V', step: 0.5 }
+  };
+
+  const actSelect = document.getElementById('actuator-select');
+  const outConsNum = document.getElementById('out-cons-num');
+  const outConsSlider = document.getElementById('out-cons-slider');
+
+  function syncOutControls() {
+    const a = ACTUATORS[actSelect.value];
+    document.getElementById('out-unit-lbl').textContent = a.unit;
+    document.getElementById('out-range-hint').textContent = `Rang: ${a.min} – ${a.max} ${a.unit}`;
+    outConsSlider.min = a.min;
+    outConsSlider.max = a.max;
+    outConsSlider.step = a.step;
+    outConsNum.step = a.step;
+    const mid = (a.min + a.max) / 2;
+    outConsSlider.value = mid;
+    outConsNum.value = mid;
+    updateOutputSim();
+  }
+
+  actSelect.addEventListener('change', syncOutControls);
+
+  outConsSlider.addEventListener('input', () => {
+    outConsNum.value = outConsSlider.value;
+    updateOutputSim();
+  });
+
+  outConsNum.addEventListener('input', () => {
+    const raw = outConsNum.value.replace(',', '.');
+    const val = parseFloat(raw);
+    if (!isNaN(val)) {
+      const a = ACTUATORS[actSelect.value];
+      outConsSlider.value = Math.min(Math.max(val, a.min), a.max);
+      updateOutputSim(val);
+    }
+  });
+
+  function setOutPercent(pct) {
+    const a = ACTUATORS[actSelect.value];
+    const val = Number((a.min + pct * (a.max - a.min)).toFixed(2));
+    outConsSlider.value = val;
+    outConsNum.value = val;
+    updateOutputSim(val);
+  }
+
+  function updateOutputSim(overrideVal = null) {
+    const a = ACTUATORS[actSelect.value];
+    let val = overrideVal !== null ? overrideVal : parseFloat(outConsNum.value.replace(',', '.'));
+    if (isNaN(val)) val = a.min;
+    val = Math.min(Math.max(val, a.min), a.max);
+
+    const normOut = (val - a.min) / (a.max - a.min);
+    const scaleMin = a.sigType === '4-20mA' ? 5530 : 0;
+    const qwVal = Math.round(scaleMin + normOut * (27648 - scaleMin));
+
+    let sigStr = '';
+    let sigDesc = '';
+    if (a.sigType === '0-20mA') {
+      const ma = (qwVal / 27648) * 20;
+      sigStr = `${ma.toFixed(2)} mA`;
+      sigDesc = 'Sortida analògica 0-20 mA (CPU 1215C)';
+    } else if (a.sigType === '4-20mA') {
+      const ma = 4 + normOut * 16;
+      sigStr = `${ma.toFixed(2)} mA`;
+      sigDesc = 'Sortida analògica 4-20 mA (Mòdul SM/SB)';
+    } else {
+      const v = (qwVal / 27648) * 10;
+      sigStr = `${v.toFixed(2)} V`;
+      sigDesc = 'Sortida analògica 0-10 V (Mòdul SM/SB)';
+    }
+
+    document.getElementById('out-st1-val').textContent = `${val} ${a.unit}`;
+    document.getElementById('out-st1-pct').textContent = `${(normOut * 100).toFixed(1)}% de consigna`;
+    document.getElementById('out-st1-name').textContent = a.name;
+    document.getElementById('out-st1-range').textContent = `${a.min} .. ${a.max} ${a.unit}`;
+
+    document.getElementById('out-st2-qw').textContent = qwVal;
+    document.getElementById('out-st2-hex').textContent = `Hex: 16#${qwVal.toString(16).toUpperCase().padStart(4, '0')} · Tipus: Int`;
+    document.getElementById('out-st2-norm').textContent = normOut.toFixed(4);
+    document.getElementById('out-st2-wrange').textContent = `${scaleMin} .. 27648`;
+
+    document.getElementById('out-st3-sig').textContent = sigStr;
+    document.getElementById('out-st3-type').textContent = sigDesc;
+    document.getElementById('out-st3-act').textContent = `Regulació al ${(normOut * 100).toFixed(0)}%`;
+
+    document.getElementById('out-tia-nmin').textContent = a.min.toFixed(1);
+    document.getElementById('out-tia-nval').textContent = val.toFixed(1);
+    document.getElementById('out-tia-nmax').textContent = a.max.toFixed(1);
+    document.getElementById('out-tia-nout').textContent = normOut.toFixed(3);
+
+    document.getElementById('out-tia-smin').textContent = scaleMin;
+    document.getElementById('out-tia-sval').textContent = normOut.toFixed(3);
+    document.getElementById('out-tia-sout').textContent = qwVal;
+  }
+
+  // ==================== PESTANYA 3: LABORATORI DE REPTES ====================
+  let qIndex = 0;
+  let score = 0;
+  let total = 0;
+  let answeredCurrent = false;
+  let currentChallenge = null;
+
+  function generateChallenge() {
+    qIndex++;
+    answeredCurrent = false;
+    document.getElementById('q-num').textContent = qIndex;
+    document.getElementById('q-user-ans').value = '';
+    const fb = document.getElementById('q-feedback');
+    fb.style.display = 'none';
+
+    const type = qIndex % 4;
+    if (type === 1) {
+      // Càlcul %IW64 amb sensor 4-20 mA i R=500 Ohm
+      const temp = [0, 35, 70, 105, 140][Math.floor(Math.random() * 5)];
+      const ratio = temp / 140;
+      const ma = 4 + ratio * 16;
+      const v = ma * 0.5;
+      const iw = Math.round((v / 10) * 27648);
+      currentChallenge = {
+        cat: 'ENTRADA 4-20 mA (%IW64)',
+        prompt: `Tenim la sonda de temperatura <strong>IFM TA3130 (0 a 140 °C, sortida 4–20 mA)</strong> connectada a una entrada de 0–10 V del S7-1200 amb una resistència <em>shunt</em> de <strong>500 Ω</strong>. Si la temperatura real és de <strong>${temp} °C</strong>, quin valor enter aproximat marcarà <code>%IW64</code>?`,
+        unit: '(enter 0..27648)',
+        answer: iw,
+        tol: 15,
+        explanation: `1) ${temp} °C sobre 0–140 °C és el ${(ratio * 100).toFixed(0)}% del rang.<br>2) El corrent del sensor és 4 + ${(ratio * 16).toFixed(1)} = <strong>${ma.toFixed(1)} mA</strong>.<br>3) Amb 500 Ω: V = ${(ma / 1000).toFixed(4)} A × 500 Ω = <strong>${v.toFixed(2)} V</strong>.<br>4) Al PLC: (${v.toFixed(2)} / 10) × 27648 ≈ <strong>${iw}</strong>.`
+      };
+    } else if (type === 2) {
+      // Llei d'Ohm tensió shunt
+      const ma = [4, 8, 12, 16, 20][Math.floor(Math.random() * 5)];
+      const v = ma * 0.5;
+      currentChallenge = {
+        cat: 'LLEI D\'OHM · RESISTÈNCIA SHUNT',
+        prompt: `Un transmissor de pressió <strong>IFM PI1696</strong> està enviant exactament <strong>${ma} mA</strong> pel llaç de corrent. Si fem servir una resistència <em>shunt</em> de <strong>500 Ω</strong> en paral·lel amb l'entrada analògica, quina tensió en Volts (V) arribarà al borne del PLC?`,
+        unit: 'V',
+        answer: v,
+        tol: 0.05,
+        explanation: `Aplicant la Llei d'Ohm (V = I · R):<br>V = ${(ma / 1000).toFixed(3)} A × 500 Ω = <strong>${v.toFixed(2)} V</strong>.`
+      };
+    } else if (type === 3) {
+      // Sortida %QW64
+      const rpm = [300, 600, 750, 1200, 1500][Math.floor(Math.random() * 5)];
+      const ratio = rpm / 1500;
+      const qw = Math.round(ratio * 27648);
+      currentChallenge = {
+        cat: 'SORTIDA ANALÒGICA (%QW64)',
+        prompt: `Volem governar un variador de freqüència (<strong>0 a 1500 rpm</strong>) mitjançant la sortida analògica <code>%QW64</code> (0–20 mA, rang 0–27648). Si l'operari fixa una consigna de <strong>${rpm} rpm</strong>, quin valor enter hem d'enviar a <code>%QW64</code>?`,
+        unit: '(enter 0..27648)',
+        answer: qw,
+        tol: 10,
+        explanation: `1) <code>NORM_X</code>: ${rpm} / 1500 = <strong>${ratio.toFixed(2)}</strong>.<br>2) <code>SCALE_X</code>: ${ratio.toFixed(2)} × 27648 ≈ <strong>${qw}</strong>.`
+      };
+    } else {
+      // Diagnòstic avaria
+      currentChallenge = {
+        cat: 'DIAGNÒSTIC D\'AVARIES',
+        prompt: `Tenim el sensor de pressió <strong>IFM PI1696</strong> calibrat de <strong>200 a 2000 mbar</strong> (sortida <strong>4–20 mA</strong> amb R = 500 Ω). Si observem a TIA Portal que <code>%IW64</code> marca <strong>0</strong> (0 V), quina pressió en mbar tenim? <em>(Escriu <strong>-1</strong> si es tracta d'una avaria de cable trencat o manca d'alimentació)</em>.`,
+        unit: 'mbar (o -1 si és avaria)',
+        answer: -1,
+        tol: 0,
+        explanation: `És una <strong>AVARIA (-1)</strong>! Si la pressió fos el mínim (200 mbar), el sensor enviaria <strong>4 mA</strong>, que amb 500 Ω generarien <strong>2 V</strong> i <code>%IW64</code> marcaria aproximadament <strong>5530</strong>. Un valor de 0 indica llaç obert.`
+      };
+    }
+
+    document.getElementById('q-category').textContent = currentChallenge.cat;
+    document.getElementById('q-prompt').innerHTML = currentChallenge.prompt;
+    document.getElementById('q-ans-unit').textContent = currentChallenge.unit;
+  }
+
+  function checkChallenge() {
+    if (answeredCurrent) return;
+    const raw = document.getElementById('q-user-ans').value.replace(',', '.');
+    const userVal = parseFloat(raw);
+    if (isNaN(userVal)) return;
+
+    answeredCurrent = true;
+    total++;
+    const isOk = Math.abs(userVal - currentChallenge.answer) <= currentChallenge.tol;
+    if (isOk) score++;
+
+    document.getElementById('q-score').textContent = score;
+    document.getElementById('q-total').textContent = total;
+
+    const fb = document.getElementById('q-feedback');
+    fb.style.display = 'block';
+    if (isOk) {
+      fb.style.background = 'rgba(34, 197, 94, 0.15)';
+      fb.style.border = '1px solid rgba(34, 197, 94, 0.45)';
+      fb.innerHTML = `<strong style="color:#86efac;">✔ Correcte!</strong><br><div style="margin-top:0.4rem;">${currentChallenge.explanation}</div>`;
+    } else {
+      fb.style.background = 'rgba(239, 68, 68, 0.15)';
+      fb.style.border = '1px solid rgba(239, 68, 68, 0.45)';
+      fb.innerHTML = `<strong style="color:#fca5a5;">✘ No és del tot exacte (Resposta esperada: ${currentChallenge.answer})</strong><br><div style="margin-top:0.4rem;">${currentChallenge.explanation}</div>`;
+    }
+  }
+
+  function nextChallenge() {
+    generateChallenge();
+  }
+
+  // Inicialització
+  syncInRangeControls(true);
+  syncOutControls();
+  generateChallenge();
+</script>
+
+</body>
+</html>
