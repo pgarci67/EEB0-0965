@@ -285,7 +285,7 @@
 
   <nav>
     <button class="nav-btn active" onclick="switchTab('a1', this)">A1: Programació estructurada i Senyals Analògics</button>
-    <button class="nav-btn" onclick="switchTab('a2', this)">A2: Encoders i HSC</button>
+    <button class="nav-btn" onclick="switchTab('a2', this)">A2: Tractament d'alarmes</button>
     <button class="nav-btn" onclick="switchTab('a3', this)">A3: Encoders i HSC</button>
     <button class="nav-btn" onclick="switchTab('a4', this)">A4: Comunicacions i Motion</button>
     <button class="nav-btn" onclick="switchTab('altres', this)">Altres</button>
@@ -428,6 +428,71 @@
         </div>
       </div>
     </section>
+    
+       <!-- APARTAT A2: Tractament d'alarmes -->
+    <section id="a3" class="unit-section">
+      <div class="unit-card">
+        <h2>⚙️ A2.1. Alarmes de procés</h2>
+        <p class="unit-desc">Interrupció immediata de l'execució cíclica normal (OB1) davant esdeveniments de maquinari prioritaris (flancs en entrades digitals o comptadors ràpids HSC) mitjançant un OB d'alarma de procés (Hardware interrupt, ex. OB40).</p>
+        
+        <h3>Recursos i Material per Temes</h3>
+
+        <div class="topic-group">
+          <div class="topic-title">📌 Alarmes de procés i OB40</div>
+          
+          <!-- Subgrup Teoria -->
+          <div class="topic-subgroup">
+            <div class="topic-subgroup-title">📚 Continguts Teòrics</div>
+            <div class="resource-grid">
+              <a href="https://www.loom.com/share/033eddcaedc14156987512c1efae3a9c" target="_blank" class="resource-item">
+                <div class="resource-info">
+                  <span class="badge badge-link">Enllaç</span>
+                  <span class="resource-title">Vídeo explicació</span>
+                </div>
+                <span class="resource-arrow">→</span>
+              </a>
+              <a href="https://www.youtube.com/watch?v=SSQlanNUcz0" target="_blank" class="resource-item">
+                <div class="resource-info">
+                  <span class="badge badge-resource">Recurs</span>
+                  <span class="resource-title">Vídeo comptadors ràpids</span>
+                </div>
+                <span class="resource-arrow">→</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Subgrup Exemples i Simulacions -->
+          <div class="topic-subgroup">
+            <div class="topic-subgroup-title">💡 Exemples i Simulacions</div>
+            <div class="resource-grid">
+              <a href="A3/simulador_hsc_encoder.html" target="_blank" class="resource-item">
+                <div class="resource-info">
+                  <span class="badge badge-sim">Simulador</span>
+                  <span class="resource-title">Simulador Encoders, Quadratura A/B i HSC</span>
+                </div>
+                <span class="resource-arrow">→</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Subgrup Activitats -->
+          <div class="topic-subgroup">
+            <div class="topic-subgroup-title">✏️ Activitats i Exercicis</div>
+            <div class="resource-grid">
+              <a href="A3/AEEB0_0965_HSC_Encoders.pdf" target="_blank" class="resource-item">
+                <div class="resource-info">
+                  <span class="badge badge-activity">Activitat 1</span>
+                  <span class="resource-title">EEB0_0965_HSC_Encoders</span>
+                </div>
+                <span class="resource-arrow">→</span>
+              </a>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
 
     <!-- APARTAT A3: ENCODERS I COMPTADORS RÀPIDS -->
     <section id="a3" class="unit-section">
@@ -494,7 +559,7 @@
     </section>
 
     <!-- APARTAT A3: REGULACIÓ PID -->
-    <section id="a3" class="unit-section">
+    <section id="a4" class="unit-section">
       <div class="unit-card">
         <h2>🎛️ A3. Regulació PID Compact</h2>
         <p class="unit-desc">Control en llaç tancat de processos continus (temperatura, pressió, nivell) amb l'objecte tecnològic PID_Compact i blocs cíclics OB30.</p>
