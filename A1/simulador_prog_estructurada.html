@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador Programació Estructurada S7-1200 — MP 0965</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-alt: #263349;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --siemens: #009999;
+      --siemens-dark: #007373;
+      --accent: #38bdf8;
+      --ob-col: #a855f7;
+      --fb-col: #3b82f6;
+      --fc-col: #22c55e;
+      --db-col: #f59e0b;
+      --err: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      padding-bottom: 3.5rem;
+    }
+
+    header {
+      background: linear-gradient(135deg, #091e2c 0%, #0f172a 100%);
+      border-bottom: 2px solid var(--siemens);
+      padding: 1.25rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+    }
+
+    .badge {
+      background: var(--siemens);
+      color: #fff;
+      font-weight: 700;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    nav.tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    nav.tabs button {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.55rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88rem;
+      transition: all 0.2s;
+    }
+
+    nav.tabs button:hover {
+      color: var(--text);
+      border-color: var(--siemens);
+    }
+
+    nav.tabs button.active {
+      background: var(--siemens);
+      color: #fff;
+      border-color: var(--siemens);
+    }
+
+    main {
+      max-width: 1320px;
+      margin: 1.5rem auto;
+      padding: 0 1.25rem;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Guia didàctica */
+    .guide-box {
+      background: rgba(0, 153, 153, 0.1);
+      border: 1px solid var(--siemens);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .guide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .guide-header h2 {
+      font-size: 1rem;
+      color: #5eead4;
+    }
+
+    .guide-toggle {
+      background: rgba(0, 153, 153, 0.25);
+      border: 1px solid var(--siemens);
+      color: #ccfbf1;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .guide-body {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      color: #e2e8f0;
+    }
+
+    .guide-body.collapsed {
+      display: none;
+    }
+
+    .guide-body ul {
+      margin-left: 1.25rem;
+      margin-top: 0.4rem;
+    }
+
+    .guide-body li {
+      margin-bottom: 0.25rem;
+    }
+
+    /* Targetes i botons */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.85rem;
+      color: #f1f5f9;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.45rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.85rem;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+    }
+
+    .btn.primary {
+      background: var(--siemens);
+      border-color: var(--siemens);
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      background: var(--siemens-dark);
+    }
+
+    .btn.active-state {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: var(--accent);
+      color: #7dd3fc;
+    }
+
+    .mono {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-weight: 600;
+    }
+
+    /* Pestanya 1: Multi-instància FB22 */
+    .fb22-layout {
+      display: grid;
+      grid-template-columns: 270px 1fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (max-width: 860px) {
+      .fb22-layout { grid-template-columns: 1fr; }
+    }
+
+    .ob1-call-box {
+      background: var(--bg);
+      border: 2px solid var(--ob-col);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .call-item {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 0.8rem;
+      margin-bottom: 0.6rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .call-item:hover, .call-item.active {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.12);
+    }
+
+    .db-instances {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.9rem;
+    }
+
+    .db-card {
+      background: var(--bg);
+      border: 2px solid var(--db-col);
+      border-radius: 10px;
+      padding: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .db-card.highlighted {
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
+      transform: translateY(-3px);
+    }
+
+    .db-header {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fde68a;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      margin-bottom: 0.65rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .db-field {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.84rem;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .db-field input {
+      width: 78px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      text-align: right;
+      font-family: 'Consolas', monospace;
+    }
+
+    /* Pestanya 2: Estats operatius i Scan */
+    .cpu-leds {
+      display: flex;
+      gap: 1.25rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem 1.2rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .led-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .led-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #334155;
+      border: 1px solid #475569;
+    }
+
+    .led-dot.green { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
+    .led-dot.amber { background: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
+    .led-dot.blink { animation: blinkAnim 0.7s infinite alternate; }
+
+    @keyframes blinkAnim {
+      from { opacity: 0.3; }
+      to { opacity: 1; }
+    }
+
+    .scan-pipeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+
+    .scan-step {
+      flex: 1;
+      min-width: 135px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 9px;
+      padding: 0.7rem;
+      font-size: 0.82rem;
+      transition: all 0.2s;
+    }
+
+    .scan-step.startup { border-style: dashed; }
+    .scan-step.current {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.14);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(34, 197, 94, 0.2);
+    }
+
+    .scan-step .step-tag {
+      font-weight: 800;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .ob-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .ob-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+    }
+
+    .ob-card h4 {
+      color: #d8b4fe;
+      font-size: 0.92rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .ob-card p {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    /* Pestanya 3: Slice Access 32 bits */
+    .dword-container {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      overflow-x: auto;
+    }
+
+    .words-row, .bytes-row, .bits-row {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 6px;
+      min-width: 780px;
+    }
+
+    .words-row { grid-template-columns: repeat(2, 1fr); }
+    .bytes-row { grid-template-columns: repeat(4, 1fr); }
+    .bits-row { grid-template-columns: repeat(32, 1fr); }
+
+    .seg-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.4rem;
+      text-align: center;
+      font-family: 'Consolas', monospace;
+      font-size: 0.82rem;
+    }
+
+    .seg-box.word { border-color: var(--fb-col); color: #93c5fd; }
+    .seg-box.byte { border-color: var(--db-col); color: #fde68a; }
+
+    .bit-btn {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 4px;
+      padding: 0.35rem 0;
+      font-family: 'Consolas', monospace;
+      font-size: 0.72rem;
+      cursor: pointer;
+      text-align: center;
+      user-select: none;
+    }
+
+    .bit-btn.on {
+      background: var(--siemens);
+      border-color: #5eead4;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .bit-btn span {
+      display: block;
+      font-size: 0.62rem;
+      opacity: 0.75;
+    }
+
+    table.dt-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    table.dt-table th, table.dt-table td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.7rem;
+      text-align: left;
+    }
+
+    table.dt-table th {
+      background: var(--bg);
+      color: #7dd3fc;
+    }
+
+    /* Pestanya 4: Validador d'adreçament */
+    .addr-tester {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 0.9rem;
+    }
+
+    .addr-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 0.9rem;
+    }
+
+    .addr-syntax {
+      background: #091e2c;
+      border: 1px solid var(--siemens);
+      color: #5eead4;
+      padding: 0.4rem 0.65rem;
+      border-radius: 6px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.92rem;
+      margin-bottom: 0.5rem;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="badge">MP 0965 · S7-1200</span>
+      <div>
+        <h1>Programació Estructurada i Tipus de Dades</h1>
+        <div class="subtitle">Blocs Lògics (OB, FB, FC, DB), Cicle Scan, Estats Operatius i Slice Access</div>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="active" onclick="openTab('tab-blocs', this)">1. Blocs (OB/FB/FC/DB)</button>
+      <button onclick="openTab('tab-scan', this)">2. Estats CPU i Cicle Scan</button>
+      <button onclick="openTab('tab-dades', this)">3. Tipus de Dades i Segments</button>
+      <button onclick="openTab('tab-addr', this)">4. Adreçament i Test</button>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 1: BLOCS LÒGICS I MULTI-INSTÀNCIA FB22                     -->
+    <!-- =================================================================== -->
+    <section id="tab-blocs" class="tab-content active">
+      <div class="guide-box">
+        <div class="guide-header" onclick="toggleGuide('g1', this)">
+          <h2>📘 Guia teòrica: Programació Lineal vs. Modular i Multi-Instància</h2>
+          <span class="guide-toggle">Amagar guia ▲</span>
+        </div>
+        <div id="g1" class="guide-body">
+          <ul>
+            <li><strong>Estructura lineal vs. modular:</strong> En lloc de posar tot el codi dins l'<strong>OB1</strong>, dividim el programa en blocs reutilitzables (<strong>FB</strong> i <strong>FC</strong>). En acabar el bloc cridat, la CPU reprèn l'execució a la instrucció següent del bloc invocant.</li>
+            <li><strong>FB vs. FC:</strong> Un <strong>FB</strong> (Bloc de Funció) disposa d'un <strong>DB d'instància</strong> associat per conservar el valor de les variables entre cicles. Una <strong>FC</strong> (Funció) no té memòria pròpia associada.</li>
+            <li><strong>Profunditat d'aniuament màxima:</strong> Fins a <strong>16 nivells</strong> des d'OBs de cicle o arrencada, i fins a <strong>4 nivells</strong> des d'OBs d'alarma (retardo, cíclica, procés, error de temps o diagnòstic).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span>Simulador Multi-Instància: 1 Bloc Genèric (`FB 22`) → 3 Motors (`DB 201`, `DB 202`, `DB 203`)</span>
+          <button class="btn primary" onclick="stepFB22()">▶ Executar següent crida des d'OB1</button>
+        </h3>
+        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 1rem;">
+          Fes clic a cada crida dins d'<strong>OB1</strong> o modifica els paràmetres de cada motor. Observa com el codi del bloc genèric <strong>FB 22</strong> és únic, però cada crida llegeix i escriu al seu propi <strong>DB d'instància</strong>.
+        </p>
+
+        <div class="fb22-layout">
+          <div class="ob1-call-box">
+            <div style="font-weight: 800; color: #d8b4fe; margin-bottom: 0.6rem;">MAIN [OB1] — Programa Cíclic</div>
+            <div class="call-item active" id="call-0" onclick="selectMotor(0)">
+              <span class="mono">CALL FB 22, DB 201</span>
+              <span style="font-size:0.78rem; color:#fdba74;">Motor 1</span>
+            </div>
+            <div class="call-item" id="call-1" onclick="selectMotor(1)">
+              <span class="mono">CALL FB 22, DB 202</span>
+              <span style="font-size:0.78rem; color:#86efac;">Motor 2</span>
+            </div>
+            <div class="call-item" id="call-2" onclick="selectMotor(2)">
+              <span class="mono">CALL FB 22, DB 203</span>
+              <span style="font-size:0.78rem; color:#93c5fd;">Motor 3</span>
+            </div>
+            <div id="fb22-status" style="margin-top:0.8rem; font-size:0.82rem; background:var(--panel); padding:0.6rem; border-radius:6px; border:1px solid var(--border);">
+              Executant crida 1: <strong>FB 22</strong> treballant sobre la memòria privada de <strong>DB 201</strong>.
+            </div>
+          </div>
+
+          <div class="db-instances">
+            <div class="db-card highlighted" id="db-card-0">
+              <div class="db-header"><span>DB 201 (Instància 1)</span><span>Motor Cinta</span></div>
+              <div class="db-field"><span>Velocitat (RPM):</span><input type="number" id="m0-vel" value="1450" onchange="updateMotorData()"></div>
+              <div class="db-field"><span>Temps accel. (s):</span><input type="number" id="m0-acc" value="4" onchange="updateMotorData()"></div>
+              <div class="db-field"><span>Hores operació:</span><span class="mono" id="m0-hrs">128.5 h</span></div>
+              <div style="margin-top:0.5rem; text-align:right;">
+                <button class="btn" onclick="addHour(0)">+0.5 h operació</button>
+              </div>
+            </div>
+
+            <div class="db-card" id="db-card-1">
+              <div class="db-header"><span>DB 202 (Instància 2)</span><span>Bomba Refrig.</span></div>
+              <div class="db-field"><span>Velocitat (RPM):</span><input type="number" id="m1-vel" value="2900" onchange="updateMotorData()"></div>
+              <div class="db-field"><span>Temps accel. (s):</span><input type="number" id="m1-acc" value="2" onchange="updateMotorData()"></div>
+              <div class="db-field"><span>Hores operació:</span><span class="mono" id="m1-hrs">542.0 h</span></div>
+              <div style="margin-top:0.5rem; text-align:right;">
+                <button class="btn" onclick="addHour(1)">+0.5 h operació</button>
+              </div>
+            </div>
+
+            <div class="db-card" id="db-card-2">
+              <div class="db-header"><span>DB 203 (Instància 3)</span><span>Ventilador</span></div>
+              <div class="db-field"><span>Velocitat (RPM):</span><input type="number" id="m2-vel" value="980" onchange="updateMotorData()"></div>
+              <div class="db-field"><span>Temps accel. (s):</span><input type="number" id="m2-acc" value="8" onchange="updateMotorData()"></div>
+              <div class="db-field"><span>Hores operació:</span><span class="mono" id="m2-hrs">74.0 h</span></div>
+              <div style="margin-top:0.5rem; text-align:right;">
+                <button class="btn" onclick="addHour(2)">+0.5 h operació</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Resum Comparatiu de Blocs Lògics</h3>
+          <table class="dt-table">
+            <thead>
+              <tr><th>Bloc</th><th>Funció principal</th><th>Memòria associada</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono" style="color:#d8b4fe;">OB</td><td>Interfície amb el sistema operatiu; defineix l'estructura i els esdeveniments.</td><td>Sense DB d'instància (usa DBs globals o marques).</td></tr>
+              <tr><td class="mono" style="color:#93c5fd;">FB</td><td>Codi reutilitzable amb memòria persistent entre crides (temporitzadors, comptadors, estats).</td><td><strong>Sí (DB d'instància)</strong> per conservar valors.</td></tr>
+              <tr><td class="mono" style="color:#86efac;">FC</td><td>Subrutina sense memòria pròpia (càlculs matemàtics, conversions, lògica combinacional).</td><td><strong>No</strong> (els valors temporals es perden en sortir).</td></tr>
+              <tr><td class="mono" style="color:#fde68a;">DB</td><td>Emmagatzematge de dades del programa (Global per a tots els blocs o d'Instància per a un FB).</td><td>Àrea de memòria de dades de la CPU.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>Límits de Profunditat d'Aniuament</h3>
+          <p style="font-size:0.88rem; color:var(--muted); margin-bottom:0.8rem;">
+            Un bloc pot cridar un altre bloc (`OB1 → FB2 → FB1 → FC21`), però el sistema operatiu estableix un límit d'aniuament segons l'origen:
+          </p>
+          <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:0.85rem; margin-bottom:0.65rem;">
+            <strong style="color:#86efac;">16 nivells màxims:</strong> Des d'<strong>OB de cicle (OB1)</strong> o <strong>OB d'arrencada (OB100)</strong>.
+          </div>
+          <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:0.85rem;">
+            <strong style="color:#fde68a;">4 nivells màxims:</strong> Des d'<strong>OB d'alarma</strong> (alarma de retard, alarma cíclica, alarma de procés, alarma d'error de temps o alarma de diagnòstic).
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 2: ESTATS OPERATIUS I CICLE SCAN                           -->
+    <!-- =================================================================== -->
+    <section id="tab-scan" class="tab-content">
+      <div class="guide-box">
+        <div class="guide-header" onclick="toggleGuide('g2', this)">
+          <h2>📘 Guia teòrica: Estats Operatius (STOP, ARRANQUE, RUN) i Memòria Imatge</h2>
+          <span class="guide-toggle">Amagar guia ▲</span>
+        </div>
+        <div id="g2" class="guide-body">
+          <ul>
+            <li><strong>STOP:</strong> No s'executa el programa. És l'estat on es pot carregar un projecte a la CPU.</li>
+            <li><strong>ARRANQUE (Warm Restart):</strong> S'executen els OBs d'arrencada un sol cop. S'inicialitzen les dades no remanents i <strong>es conserven les dades remanents</strong>. Les alarmes no es processen durant l'arrencada.</li>
+            <li><strong>RUN i Memòria Imatge de Procés:</strong> Abans d'executar `OB1`, la CPU llegeix les entrades físiques i les guarda a la memòria imatge `I` perquè no canviïn a mig cicle. Les sortides s'escriuen a la memòria imatge `Q` i s'aboquen a les sortides físiques a l'inici del següent cicle.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span>Control d'Estats Operatius de la CPU i Seqüència d'Execució</span>
+          <div style="display:flex; gap:0.45rem; flex-wrap:wrap;">
+            <button class="btn" onclick="setCpuMode('STOP')">⏹ STOP</button>
+            <button class="btn primary" onclick="setCpuMode('STARTUP')">⚡ Passar a RUN (Arrencada en calent)</button>
+            <button class="btn" id="btn-step-scan" onclick="advanceScanStep()" disabled>⏭ Avançar pas del cicle</button>
+          </div>
+        </h3>
+
+        <div class="cpu-leds">
+          <div class="led-item"><span class="led-dot amber" id="led-runstop"></span><span>RUN/STOP: <span id="lbl-mode" class="mono">STOP</span></span></div>
+          <div class="led-item"><span class="led-dot" id="led-error"></span><span>ERROR: OFF</span></div>
+          <div class="led-item"><span class="led-dot" id="led-maint"></span><span>MAINT: OFF</span></div>
+          <div style="margin-left:auto; font-size:0.85rem; color:#7dd3fc;" id="lbl-download">
+            ✅ Càrrega de projecte PERMESA (CPU en STOP)
+          </div>
+        </div>
+
+        <h4 style="font-size:0.9rem; color:#fde68a; margin-bottom:0.4rem;">Fase 1 · Seqüència d'ARRANQUE (S'executa 1 cop en passar de STOP a RUN)</h4>
+        <div class="scan-pipeline">
+          <div class="scan-step startup" id="st-A"><span class="step-tag">Pas A</span>Esborra l'àrea de memòria imatge d'entrades (I).</div>
+          <div class="scan-step startup" id="st-B"><span class="step-tag">Pas B</span>Inicialitza sortides amb l'últim valor o valor substitutiu.</div>
+          <div class="scan-step startup" id="st-C"><span class="step-tag">Pas C</span>Executa els <strong>OBs d'arrencada</strong> (Warm restart: conserva dades remanents).</div>
+          <div class="scan-step startup" id="st-D"><span class="step-tag">Pas D</span>Copia l'estat de les entrades físiques a la memòria I.</div>
+          <div class="scan-step startup" id="st-F"><span class="step-tag">Pas F</span>Habilita l'escriptura de la memòria Q a les sortides físiques.</div>
+        </div>
+
+        <h4 style="font-size:0.9rem; color:#86efac; margin-top:1rem; margin-bottom:0.4rem;">Fase 2 · Bucle Cíclic en estat RUN (Scan Cycle)</h4>
+        <div class="scan-pipeline">
+          <div class="scan-step" id="st-1"><span class="step-tag">Pas 1</span>Escriu la memòria imatge <strong>Q</strong> a les sortides físiques.</div>
+          <div class="scan-step" id="st-2"><span class="step-tag">Pas 2</span>Copia les entrades físiques a la memòria imatge <strong>I</strong>.</div>
+          <div class="scan-step" id="st-3"><span class="step-tag">Pas 3</span>Executa els <strong>OBs de cicle (OB1)</strong> i els blocs cridats.</div>
+          <div class="scan-step" id="st-4"><span class="step-tag">Pas 4</span>Realitza l'autodiagnòstic de la CPU.</div>
+          <div class="scan-step" id="st-5"><span class="step-tag">Pas 5 (Contínuament)</span>Processa alarmes en cua i comunicacions en qualsevol punt.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Catàleg de Blocs d'Organització (OB) del Siemens S7-1200</h3>
+        <div class="ob-grid">
+          <div class="ob-card"><h4>🔄 OB de Cicle (Main OB1)</h4><p>S'executa cíclicament en estat RUN. És el bloc principal on es criden els FB i FC.</p></div>
+          <div class="ob-card"><h4>🚀 OB d'Arrencada (Startup)</h4><p>S'executa una sola vegada en passar de STOP a RUN abans d'iniciar el cicle normal.</p></div>
+          <div class="ob-card"><h4>⏱️ OB d'Alarma de Retard</h4><p>S'executa un cop transcorregut un temps de retard configurat des d'una instrucció.</p></div>
+          <div class="ob-card"><h4>🔁 OB d'Alarma Cíclica</h4><p>S'executa en intervals periòdics exactes (fins a 4 esdeveniments configurables). Ideal per a PID.</p></div>
+          <div class="ob-card"><h4>⚡ OB d'Alarma de Procés</h4><p>Interromp el cicle normal immediatament quan es produeix un esdeveniment de maquinari (ex. HSC o flanc).</p></div>
+          <div class="ob-card"><h4>🚨 OB Error de Temps (OB 80)</h4><p>Es dispara si el programa supera el temps màxim de cicle. Registra l'esdeveniment al búfer de diagnòstic.</p></div>
+          <div class="ob-card"><h4>🔌 OB Presència / Fallada Rack</h4><p>Reacciona davant l'extracció/inserció de mòduls o pèrdua de comunicació PROFINET/PROFIBUS.</p></div>
+          <div class="ob-card"><h4>🦾 OB MC-Servo i MC-Interpolator</h4><p>Creats automàticament en configurar Objectes Tecnològics de Motion Control (control d'eixos).</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 3: TIPUS DE DADES I ACCÉS PER SEGMENTS (SLICE ACCESS)      -->
+    <!-- =================================================================== -->
+    <section id="tab-dades" class="tab-content">
+      <div class="guide-box">
+        <div class="guide-header" onclick="toggleGuide('g3', this)">
+          <h2>📘 Guia teòrica: Accés a Segments d'una Variable (.xn, .bn, .wn)</h2>
+          <span class="guide-toggle">Amagar guia ▲</span>
+        </div>
+        <div id="g3" class="guide-body">
+          <ul>
+            <li>A TIA Portal pots accedir directament a fragments d'una variable de mida <strong>Byte (8 bits)</strong>, <strong>Word (16 bits)</strong> o <strong>DWord (32 bits)</strong> sense declarar màscares complexes.</li>
+            <li><strong>Sintaxi:</strong> <span class="mono">"Variable".xn</span> (bit 0..31), <span class="mono">"Variable".bn</span> (byte 0..3) i <span class="mono">"Variable".wn</span> (paraula 0..1).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span>Visualitzador Interactiu de 32 Bits (`DWORD`) — Slice Access</span>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <span style="font-size:0.85rem; color:var(--muted);">Valor Hex:</span>
+            <input type="text" id="hex-input" value="20F30A05" maxlength="8" style="width:110px; background:var(--bg); border:1px solid var(--siemens); color:#5eead4; padding:0.3rem 0.5rem; border-radius:6px; font-family:'Consolas',monospace; text-transform:uppercase;" onchange="applyHexInput()">
+            <button class="btn" onclick="clearDword()">Posar a 0</button>
+          </div>
+        </h3>
+
+        <p style="font-size:0.86rem; color:var(--muted); margin-bottom:0.85rem;">
+          Fes clic sobre qualsevol bit (<span class="mono">x0</span> a <span class="mono">x31</span>) per commutar-lo i observa com s'actualitzen automàticament els bytes (<span class="mono">b0..b3</span>) i les paraules (<span class="mono">w0..w1</span>):
+        </p>
+
+        <div class="dword-container">
+          <div class="words-row">
+            <div class="seg-box word" id="seg-w1">"Variable".w1 (Bits 31..16) = 16#20F3</div>
+            <div class="seg-box word" id="seg-w0">"Variable".w0 (Bits 15..0) = 16#0A05</div>
+          </div>
+          <div class="bytes-row">
+            <div class="seg-box byte" id="seg-b3">"Variable".b3 = 16#20</div>
+            <div class="seg-box byte" id="seg-b2">"Variable".b2 = 16#F3</div>
+            <div class="seg-box byte" id="seg-b1">"Variable".b1 = 16#0A</div>
+            <div class="seg-box byte" id="seg-b0">"Variable".b0 = 16#05</div>
+          </div>
+          <div class="bits-row" id="bits-grid"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Taula Completa de Tipus de Dades S7-1200</h3>
+        <table class="dt-table">
+          <thead>
+            <tr><th>Categoria</th><th>Tipus de dades</th><th>Mida</th><th>Rang / Característiques</th><th>Exemple de constant</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Seqüència de bits</td><td class="mono">Bool / Byte / Word / DWord</td><td>1 / 8 / 16 / 32 bits</td><td>Valors binàris, octals o hexadecimals</td><td class="mono">TRUE, 2#1000_1001, W#16#F1C0</td></tr>
+            <tr><td>Sencers (amb/sense signe)</td><td class="mono">USInt, SInt, UInt, Int, UDInt, DInt</td><td>8 / 16 / 32 bits</td><td>Ex: <span class="mono">Int</span> (-32.768 a 32.767), <span class="mono">UInt</span> (0 a 65.535)</td><td class="mono">+50, 30000, -2131754992</td></tr>
+            <tr><td>Coma flotant</td><td class="mono">Real / LReal</td><td>32 / 64 bits</td><td>Precisió simple (32b) i doble (64b). <span class="mono">LReal</span> sense adreça absoluta.</td><td class="mono">123.456, -3.4, 1.0e-5</td></tr>
+            <tr><td>Data i Hora</td><td class="mono">Time / Date / TOD / DTL</td><td>32b / 16b / 32b / 12B</td><td><span class="mono">DTL</span> estructura any, mes, dia, dia setmana, h, min, s i ns.</td><td class="mono">T#5m_30s, D#2009-12-31</td></tr>
+            <tr><td>Caràcter i Cadena</td><td class="mono">Char, WChar, String, WString</td><td>8b, 16b, n+2 B/W</td><td>Cadenes ASCII (<span class="mono">String</span>, màx. 254 B) o Unicode (<span class="mono">WString</span>).</td><td class="mono">'A', "ABC", "ä123@XYZ"</td></tr>
+            <tr><td>Estructurats</td><td class="mono">ARRAY / STRUCT</td><td>Variable</td><td><span class="mono">ARRAY</span> fins a 6 dimensions; <span class="mono">STRUCT</span> aniuable fins a 8 nivells.</td><td class="mono">Motor.Value_2x4[2,4]</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 4: ADREÇAMENT I TEST D'AUTOAVALUACIÓ                       -->
+    <!-- =================================================================== -->
+    <section id="tab-addr" class="tab-content">
+      <div class="card">
+        <h3>Guia Ràpida de Sintaxi d'Adreçament a TIA Portal</h3>
+        <div class="addr-tester">
+          <div class="addr-card">
+            <div class="addr-syntax">"Motor" vs "Motor":P</div>
+            <p style="font-size:0.85rem; color:var(--muted);">
+              Sense <span class="mono">:P</span> s'accedeix a la <strong>memòria imatge de procés</strong>. Amb <span class="mono">:P</span> s'accedeix directament a l'entrada/sortida perifèrica física a l'instant.
+            </p>
+          </div>
+
+          <div class="addr-card">
+            <div class="addr-syntax">DB1.DBX1.0 / DB1.DBW2 / DB1.DBD8</div>
+            <p style="font-size:0.85rem; color:var(--muted);">
+              Adreçament absolut en un DB global no optimitzat: <span class="mono">DBX</span> (bit), <span class="mono">DBB</span> (byte), <span class="mono">DBW</span> (paraula 16b), <span class="mono">DBD</span> (doble paraula 32b).
+            </p>
+          </div>
+
+          <div class="addr-card">
+            <div class="addr-syntax">#Value / #Multi.On</div>
+            <p style="font-size:0.85rem; color:var(--muted);">
+              El símbol <span class="mono">#</span> indica una variable local declarada a la interfície del bloc o dins del seu DB d'instància / multi-instància.
+            </p>
+          </div>
+
+          <div class="addr-card">
+            <div class="addr-syntax">"Engine".Speed.B0 / .X7</div>
+            <p style="font-size:0.85rem; color:var(--muted);">
+              Accés per segments dins d'un DB global: <span class="mono">.B0</span> llegeix el primer byte del tag <span class="mono">Speed</span> (Word) i <span class="mono">.X7</span> el vuitè bit.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Test d'Autoavaluació sobre el Temari</h3>
+        <div id="quiz-container"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Navegació per pestanyes
+    function openTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('nav.tabs button').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function toggleGuide(id, headerEl) {
+      const body = document.getElementById(id);
+      const toggle = headerEl.querySelector('.guide-toggle');
+      body.classList.toggle('collapsed');
+      toggle.textContent = body.classList.contains('collapsed') ? 'Mostrar guia ▼' : 'Amagar guia ▲';
+    }
+
+    // --- PESTANYA 1: MULTI-INSTÀNCIA FB22 ---
+    let currentMotor = 0;
+    const motorHours = [128.5, 542.0, 74.0];
+    const motorNames = ['DB 201 (Motor Cinta)', 'DB 202 (Bomba Refrig.)', 'DB 203 (Ventilador)'];
+
+    function selectMotor(idx) {
+      currentMotor = idx;
+      for (let i = 0; i < 3; i++) {
+        document.getElementById(`call-${i}`).classList.toggle('active', i === idx);
+        document.getElementById(`db-card-${i}`).classList.toggle('highlighted', i === idx);
+      }
+      document.getElementById('fb22-status').innerHTML =
+        `Executant crida ${idx + 1}: <strong>FB 22</strong> treballant sobre la memòria privada de <strong>${motorNames[idx]}</strong>.`;
+    }
+
+    function stepFB22() {
+      selectMotor((currentMotor + 1) % 3);
+    }
+
+    function addHour(idx) {
+      motorHours[idx] += 0.5;
+      document.getElementById(`m${idx}-hrs`).textContent = motorHours[idx].toFixed(1) + ' h';
+      selectMotor(idx);
+    }
+
+    function updateMotorData() {
+      selectMotor(currentMotor);
+    }
+
+    // --- PESTANYA 2: ESTATS OPERATIUS I SCAN ---
+    const scanOrder = ['st-A', 'st-B', 'st-C', 'st-D', 'st-F', 'st-1', 'st-2', 'st-3', 'st-4', 'st-5'];
+    let scanIdx = -1;
+
+    function clearScanHighlights() {
+      scanOrder.forEach(id => document.getElementById(id).classList.remove('current'));
+    }
+
+    function setCpuMode(mode) {
+      clearScanHighlights();
+      const led = document.getElementById('led-runstop');
+      const lbl = document.getElementById('lbl-mode');
+      const dl = document.getElementById('lbl-download');
+      const stepBtn = document.getElementById('btn-step-scan');
+
+      if (mode === 'STOP') {
+        scanIdx = -1;
+        led.className = 'led-dot amber';
+        lbl.textContent = 'STOP';
+        dl.innerHTML = '✅ Càrrega de projecte PERMESA (CPU en STOP)';
+        stepBtn.disabled = true;
+      } else {
+        scanIdx = 0;
+        led.className = 'led-dot green blink';
+        lbl.textContent = 'ARRANQUE (Warm Restart)';
+        dl.innerHTML = '🚫 Càrrega de projecte BLOQUEJADA en RUN';
+        stepBtn.disabled = false;
+        document.getElementById(scanOrder[scanIdx]).classList.add('current');
+      }
+    }
+
+    function advanceScanStep() {
+      if (scanIdx < 0) return;
+      clearScanHighlights();
+      scanIdx++;
+      if (scanIdx >= scanOrder.length) {
+        // Torna a l'inici del bucle cíclic RUN (Pas 1)
+        scanIdx = 5;
+      }
+      const led = document.getElementById('led-runstop');
+      const lbl = document.getElementById('lbl-mode');
+      if (scanIdx >= 5) {
+        led.className = 'led-dot green';
+        lbl.textContent = 'RUN (Execució Cíclica)';
+      }
+      document.getElementById(scanOrder[scanIdx]).classList.add('current');
+    }
+
+    // --- PESTANYA 3: SLICE ACCESS 32 BITS ---
+    let dwordVal = 0x20F30A05 >>> 0;
+
+    function renderDword() {
+      const grid = document.getElementById('bits-grid');
+      grid.innerHTML = '';
+      for (let b = 31; b >= 0; b--) {
+        const isOn = ((dwordVal >>> b) & 1) === 1;
+        const btn = document.createElement('div');
+        btn.className = 'bit-btn' + (isOn ? ' on' : '');
+        btn.innerHTML = `<span>x${b}</span>${isOn ? '1' : '0'}`;
+        btn.onclick = () => {
+          dwordVal = (dwordVal ^ (1 << b)) >>> 0;
+          renderDword();
+        };
+        grid.appendChild(btn);
+      }
+
+      const w1 = (dwordVal >>> 16) & 0xFFFF;
+      const w0 = dwordVal & 0xFFFF;
+      const b3 = (dwordVal >>> 24) & 0xFF;
+      const b2 = (dwordVal >>> 16) & 0xFF;
+      const b1 = (dwordVal >>> 8) & 0xFF;
+      const b0 = dwordVal & 0xFF;
+
+      const hex = n => n.toString(16).toUpperCase().padStart(2, '0');
+      const hexW = n => n.toString(16).toUpperCase().padStart(4, '0');
+
+      document.getElementById('seg-w1').textContent = `"Variable".w1 (Bits 31..16) = 16#${hexW(w1)}`;
+      document.getElementById('seg-w0').textContent = `"Variable".w0 (Bits 15..0) = 16#${hexW(w0)}`;
+      document.getElementById('seg-b3').textContent = `"Variable".b3 = 16#${hex(b3)}`;
+      document.getElementById('seg-b2').textContent = `"Variable".b2 = 16#${hex(b2)}`;
+      document.getElementById('seg-b1').textContent = `"Variable".b1 = 16#${hex(b1)}`;
+      document.getElementById('seg-b0').textContent = `"Variable".b0 = 16#${hex(b0)}`;
+      document.getElementById('hex-input').value = dwordVal.toString(16).toUpperCase().padStart(8, '0');
+    }
+
+    function applyHexInput() {
+      const raw = document.getElementById('hex-input').value.trim();
+      const parsed = parseInt(raw, 16);
+      if (!isNaN(parsed)) {
+        dwordVal = parsed >>> 0;
+      }
+      renderDword();
+    }
+
+    function clearDword() {
+      dwordVal = 0;
+      renderDword();
+    }
+
+    // --- PESTANYA 4: QUIZ ---
+    const questions = [
+      {
+        q: "1. Quina és la diferència principal entre un Bloc de Funció (FB) i una Funció (FC) al S7-1200?",
+        opts: [
+          "L'FB té un DB d'instància associat per conservar el valor de les variables entre crides; l'FC no.",
+          "L'FC només es pot cridar des d'un OB d'alarma i l'FB només des d'OB1.",
+          "L'FB no admet paràmetres d'entrada i sortida."
+        ],
+        ans: 0,
+        exp: "Correcte! Els FB utilitzen un bloc de dades d'instància (DB) per conservar l'estat de les seves variables durant l'execució."
+      },
+      {
+        q: "2. Quina és la profunditat màxima d'aniuament de blocs des d'un OB d'alarma (cíclica, procés, retard)?",
+        opts: ["16 nivells", "4 nivells", "8 nivells"],
+        ans: 1,
+        exp: "Exacte: 16 nivells des d'OB de cicle o d'arrencada, i 4 nivells des d'OB d'alarma."
+      },
+      {
+        q: "3. Què significa escriure l'identificador ':P' darrere d'una entrada o sortida (ex. \"Motor\":P)?",
+        opts: [
+          "Que la variable és de tipus persistent (remanent).",
+          "Que s'accedeix directament a la perifèria física (PI/PQ) en lloc de la memòria imatge de procés.",
+          "Que el bloc està protegit contra escriptura."
+        ],
+        ans: 1,
+        exp: "Molt bé! Sense :P es llegeix/escriu la memòria imatge de procés; amb :P s'accedeix directament a la perifèria."
+      },
+      {
+        q: "4. Què passa durant una arrencada en calent (Warm Restart) en passar de STOP a RUN?",
+        opts: [
+          "S'esborra tota la memòria, incloses les variables remanents.",
+          "S'inicialitzen les dades no remanents i es conserven les dades d'usuari remanents.",
+          "Es pot carregar el projecte mentre s'executen els OBs d'alarma."
+        ],
+        ans: 1,
+        exp: "Correcte! En l'arrencada en calent s'inicialitzen les dades no remanents, es conserven les remanents i els OBs d'arrencada s'executen un sol cop."
+      }
+    ];
+
+    function renderQuiz() {
+      const container = document.getElementById('quiz-container');
+      container.innerHTML = '';
+      questions.forEach((item, qi) => {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:9px; padding:1rem; margin-bottom:0.9rem;';
+        div.innerHTML = `<div style="font-weight:700; margin-bottom:0.6rem;">${item.q}</div>`;
+        item.opts.forEach((opt, oi) => {
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.style.cssText = 'display:block; width:100%; text-align:left; margin-bottom:0.4rem;';
+          btn.textContent = opt;
+          btn.onclick = () => {
+            const fb = document.getElementById(`q-fb-${qi}`);
+            if (oi === item.ans) {
+              fb.style.color = '#86efac';
+              fb.textContent = '✅ ' + item.exp;
+            } else {
+              fb.style.color = '#fca5a5';
+              fb.textContent = '❌ Torna-ho a provar! Revisa la guia teòrica de les pestanyes anteriors.';
+            }
+          };
+          div.appendChild(btn);
+        });
+        const fb = document.createElement('div');
+        fb.id = `q-fb-${qi}`;
+        fb.style.cssText = 'font-size:0.85rem; margin-top:0.4rem; font-weight:600;';
+        div.appendChild(fb);
+        container.appendChild(div);
+      });
+    }
+
+    renderDword();
+    renderQuiz();
+  </script>
+</body>
+</html>
