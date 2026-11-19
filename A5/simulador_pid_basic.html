@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador Bàsic de Control PID (S7-1200 · PID_Compact)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-alt: #263349;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --siemens: #009999;
+      --siemens-dark: #007373;
+      --sp: #38bdf8;
+      --pv: #f43f5e;
+      --cv: #22c55e;
+      --warn: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 2.5rem;
+    }
+
+    header {
+      background: linear-gradient(135deg, #091e2c 0%, #0f172a 100%);
+      border-bottom: 2px solid var(--siemens);
+      padding: 1.15rem 1.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand { display: flex; align-items: center; gap: 0.85rem; }
+    .badge {
+      background: var(--siemens);
+      color: #fff;
+      font-weight: 700;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    h1 { font-size: 1.2rem; font-weight: 700; }
+    .subtitle { font-size: 0.84rem; color: var(--muted); }
+
+    nav.tabs { display: flex; gap: 0.45rem; flex-wrap: wrap; }
+    nav.tabs button {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.84rem;
+      transition: 0.2s;
+    }
+    nav.tabs button:hover { color: var(--text); border-color: var(--siemens); }
+    nav.tabs button.active { background: var(--siemens); color: #fff; border-color: var(--siemens); }
+
+    main { max-width: 1240px; margin: 1.4rem auto; padding: 0 1.2rem; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .card h3 {
+      font-size: 1.02rem;
+      margin-bottom: 0.8rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .grid-main {
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      gap: 1.2rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid-main { grid-template-columns: 1fr; }
+    }
+
+    .ctrl-group {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 0.8rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .ctrl-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.86rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    .ctrl-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+    }
+
+    input[type="range"] { width: 100%; accent-color: var(--siemens); cursor: pointer; }
+
+    .btn {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .btn:hover { border-color: var(--sp); }
+    .btn.primary { background: var(--siemens); border-color: var(--siemens); color: #fff; }
+    .btn.primary:hover { background: var(--siemens-dark); }
+    .btn.warn { background: #b45309; border-color: #f59e0b; color: #fff; }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+      margin-bottom: 0.8rem;
+    }
+
+    canvas.chart {
+      width: 100%;
+      height: 290px;
+      background: #091e2c;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      display: block;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      font-size: 0.84rem;
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      margin-right: 0.35rem;
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+      gap: 0.7rem;
+      margin-top: 0.85rem;
+    }
+
+    .kpi {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem;
+      text-align: center;
+    }
+    .kpi-lbl { font-size: 0.74rem; color: var(--muted); }
+    .kpi-val { font-size: 1.05rem; font-weight: 700; font-family: 'Consolas', monospace; margin-top: 0.15rem; }
+
+    .diagnosis {
+      margin-top: 0.85rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      background: rgba(0, 153, 153, 0.12);
+      border-left: 4px solid var(--siemens);
+      font-size: 0.86rem;
+    }
+
+    /* Esquema visual del procés (Forn o Dipòsit) */
+    .process-visual {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      background: #091e2c;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 0.85rem;
+      margin-top: 0.85rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .tank-box {
+      width: 90px;
+      height: 110px;
+      border: 3px solid #64748b;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      position: relative;
+      background: #0f172a;
+      overflow: hidden;
+    }
+
+    .tank-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(180deg, #38bdf8, #0284c7);
+      transition: height 0.1s;
+    }
+
+    .tank-sp-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      border-top: 2px dashed #fde68a;
+      z-index: 2;
+    }
+
+    .mono { font-family: 'Consolas', monospace; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="badge">UD5 · Control PID</span>
+      <div>
+        <h1>Simulador Bàsic de Regulació PID (Llaç Tancat)</h1>
+        <div class="subtitle">Experimenta amb Setpoint (SP), Variable de Procés (PV), Sortida (CV) i les accions P, I i D</div>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="active" onclick="openTab('t-sim', this)">1. Laboratori Interactiu PID</button>
+      <button onclick="openTab('t-ideas', this)">2. Resum Visual P - I - D</button>
+      <button onclick="openTab('t-quiz', this)">3. Comprova el que has après</button>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 1: LABORATORI INTERACTIU PID                               -->
+    <!-- =================================================================== -->
+    <section id="t-sim" class="tab-content active">
+      <div class="grid-main">
+
+        <!-- PANELL D'AJUSTOS -->
+        <div>
+          <div class="card">
+            <h3>1. Escull el Procés i Preajustos</h3>
+
+            <div style="margin-bottom:0.75rem;">
+              <label style="font-size:0.82rem; color:var(--muted); display:block; margin-bottom:0.3rem;">Procés a regular (exemples del PDF):</label>
+              <select id="plant-type" onchange="resetSim()" style="width:100%; background:var(--bg); color:#fff; border:1px solid var(--border); padding:0.45rem; border-radius:7px;">
+                <option value="furnace" selected>🔥 Temperatura d'un Forn (0 – 250 °C)</option>
+                <option value="tank">💧 Nivell d'un Dipòsit amb Bomba (40 – 200 mm)</option>
+              </select>
+            </div>
+
+            <div style="font-size:0.8rem; color:#7dd3fc; font-weight:700; margin-bottom:0.4rem;">Prova els casos de la presentació:</div>
+            <div class="preset-grid">
+              <button class="btn" onclick="applyPreset('open')">Llaç Obert (Manual)</button>
+              <button class="btn" onclick="applyPreset('p_only')">Només P (Kp = 1.5)</button>
+              <button class="btn" onclick="applyPreset('p_high')">P Excessiva (Oscil·la)</button>
+              <button class="btn" onclick="applyPreset('pi')">Control PI (Sense error)</button>
+              <button class="btn primary" style="grid-column: span 2;" onclick="applyPreset('pid')">✨ Control PID Equilibrat (Ràpid i estable)</button>
+            </div>
+
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span style="color:var(--sp);">Consigna — Setpoint (SP)</span>
+                <span class="mono" id="lbl-sp">120 °C</span>
+              </div>
+              <input type="range" id="sl-sp" min="30" max="220" value="120" oninput="updateLabels()" />
+            </div>
+
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span>Acció Proporcional (<span class="mono">Kp</span>)</span>
+                <span class="mono" id="lbl-kp">2.0</span>
+              </div>
+              <div class="ctrl-desc">Força immediata proporcional a l'error actual (<span class="mono">E = SP - PV</span>).</div>
+              <input type="range" id="sl-kp" min="0" max="12" step="0.2" value="2.0" oninput="updateLabels()" />
+            </div>
+
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span>Acció Integral (<span class="mono">Ki</span>)</span>
+                <span class="mono" id="lbl-ki">0.45</span>
+              </div>
+              <div class="ctrl-desc">Acumula l'error en el temps per <strong>eliminar l'error estacionari</strong>.</div>
+              <input type="range" id="sl-ki" min="0" max="2.5" step="0.05" value="0.45" oninput="updateLabels()" />
+            </div>
+
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span>Acció Derivativa (<span class="mono">Kd</span>)</span>
+                <span class="mono" id="lbl-kd">0.60</span>
+              </div>
+              <div class="ctrl-desc">"Frena" abans d'arribar al SP per evitar sobrepassaments (<em>overshoot</em>).</div>
+              <input type="range" id="sl-kd" min="0" max="4.0" step="0.1" value="0.60" oninput="updateLabels()" />
+            </div>
+
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <button class="btn warn" onclick="injectDisturbance()">⚡ Pertorbació (Obrir porta / fuga)</button>
+              <button class="btn" onclick="resetSim()">🔄 Reiniciar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANELL DE GRÀFIQUES I ESTAT -->
+        <div>
+          <div class="card">
+            <h3>
+              <span>2. Evolució en Temps Real (Llaç Tancat — OB30 Cíclic)</span>
+              <button class="btn" id="btn-pause" onclick="togglePause()">⏸ Pausar</button>
+            </h3>
+
+            <div class="legend">
+              <span><i class="dot" style="background:var(--sp);"></i>Setpoint (SP - Consigna)</span>
+              <span><i class="dot" style="background:var(--pv);"></i>Variable de Procés (PV - Sensor)</span>
+              <span><i class="dot" style="background:var(--cv);"></i>Variable de Control (CV - Actuador 0–100%)</span>
+            </div>
+
+            <canvas id="pid-canvas" class="chart" width="760" height="290"></canvas>
+
+            <div class="kpi-row">
+              <div class="kpi">
+                <div class="kpi-lbl">Consigna (SP)</div>
+                <div class="kpi-val" style="color:var(--sp);" id="kpi-sp">120.0 °C</div>
+              </div>
+              <div class="kpi">
+                <div class="kpi-lbl">Mesura (PV)</div>
+                <div class="kpi-val" style="color:var(--pv);" id="kpi-pv">25.0 °C</div>
+              </div>
+              <div class="kpi">
+                <div class="kpi-lbl">Error (E = SP - PV)</div>
+                <div class="kpi-val" style="color:#fde68a;" id="kpi-err">95.0 °C</div>
+              </div>
+              <div class="kpi">
+                <div class="kpi-lbl">Sortida Actuador (CV)</div>
+                <div class="kpi-val" style="color:var(--cv);" id="kpi-cv">0.0 %</div>
+              </div>
+            </div>
+
+            <div class="process-visual">
+              <div style="text-align:center;">
+                <div style="font-size:0.78rem; color:var(--muted); margin-bottom:0.35rem;" id="vis-title">Estat del Forn / Dipòsit</div>
+                <div class="tank-box">
+                  <div class="tank-sp-line" id="vis-sp-line" style="bottom:48%;"></div>
+                  <div class="tank-fill" id="vis-fill" style="height:10%;"></div>
+                </div>
+              </div>
+              <div style="flex:1; min-width:240px;">
+                <div style="font-weight:700; font-size:0.9rem; margin-bottom:0.35rem;">Desglossament intern de la sortida CV:</div>
+                <div style="font-size:0.83rem; margin-bottom:0.2rem;">• Aportació <strong>P</strong> (<span class="mono">Kp · E</span>): <strong class="mono" id="term-p">0.0%</strong></div>
+                <div style="font-size:0.83rem; margin-bottom:0.2rem;">• Aportació <strong>I</strong> (<span class="mono">Ki · ∫E dt</span>): <strong class="mono" id="term-i">0.0%</strong></div>
+                <div style="font-size:0.83rem;">• Aportació <strong>D</strong> (<span class="mono">Kd · dE/dt</span>): <strong class="mono" id="term-d">0.0%</strong></div>
+              </div>
+            </div>
+
+            <div class="diagnosis" id="diag-box">
+              💡 <strong>Observació:</strong> Ajusta els paràmetres o prem un preajust per veure com respon el sistema.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 2: RESUM VISUAL DELS CONCEPTES DEL PDF                     -->
+    <!-- =================================================================== -->
+    <section id="t-ideas" class="tab-content">
+      <div class="card">
+        <h3>Conceptes Clau de la Presentació (UD5 · S7-1200)</h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:1rem;">
+          <div class="ctrl-group">
+            <h4 style="color:var(--sp); margin-bottom:0.4rem;">1. Llaç Obert vs. Llaç Tancat</h4>
+            <p style="font-size:0.84rem; color:#e2e8f0;">
+              En <strong>llaç obert</strong> no es mesura la sortida: el controlador no sap si s'ha arribat a la consigna. En <strong>llaç tancat</strong>, un sensor mesura la <strong>PV</strong> i la resta del <strong>SP</strong> per calcular l'<strong>Error (E = SP - PV)</strong>.
+            </p>
+          </div>
+          <div class="ctrl-group">
+            <h4 style="color:#fde68a; margin-bottom:0.4rem;">2. Acció Proporcional (P)</h4>
+            <p style="font-size:0.84rem; color:#e2e8f0;">
+              Actua proporcionalment a l'error actual. <strong>Limitació:</strong> per si sola <em>no pot eliminar l'error estacionari</em> (quan PV s'acosta a SP, E es fa petit i la sortida CV no té prou força per vèncer les pèrdues). Si Kp és massa alta, el sistema oscil·la.
+            </p>
+          </div>
+          <div class="ctrl-group">
+            <h4 style="color:#86efac; margin-bottom:0.4rem;">3. Acció Integral (I)</h4>
+            <p style="font-size:0.84rem; color:#e2e8f0;">
+              Suma l'error al llarg del temps. Mentre existeixi un petit error, la sortida CV continuarà pujant fins que <strong>PV = SP (error zero)</strong>. Un temps d'integració Ti massa petit (o Ki molt alt) provoca sobreactuació (<em>overshoot</em>).
+            </p>
+          </div>
+          <div class="ctrl-group">
+            <h4 style="color:#c084fc; margin-bottom:0.4rem;">4. Acció Derivativa (D)</h4>
+            <p style="font-size:0.84rem; color:#e2e8f0;">
+              Reacciona a la <strong>velocitat de canvi</strong> de l'error. Si PV puja molt ràpid cap al SP, l'acció D frena la sortida CV abans d'hora per evitar que es passi de llarg. Si l'error és constant, l'acció D val zero.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 3: AUTOAVALUACIÓ                                           -->
+    <!-- =================================================================== -->
+    <section id="t-quiz" class="tab-content">
+      <div class="card">
+        <h3>Comprova el que has après</h3>
+        <div id="quiz-box"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function openTab(id, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('nav.tabs button').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    // Estat de la simulació
+    let pv = 25.0;
+    let cv = 0.0;
+    let integral = 0.0;
+    let prevErr = 0.0;
+    let paused = false;
+    let openLoopMode = false;
+
+    const maxPoints = 240;
+    let histSP = [];
+    let histPV = [];
+    let histCV = [];
+
+    function getUnit() {
+      return document.getElementById('plant-type').value === 'furnace' ? '°C' : 'mm';
+    }
+
+    function updateLabels() {
+      const unit = getUnit();
+      const sp = parseFloat(document.getElementById('sl-sp').value);
+      const kp = parseFloat(document.getElementById('sl-kp').value);
+      const ki = parseFloat(document.getElementById('sl-ki').value);
+      const kd = parseFloat(document.getElementById('sl-kd').value);
+
+      document.getElementById('lbl-sp').textContent = sp.toFixed(0) + ' ' + unit;
+      document.getElementById('lbl-kp').textContent = kp.toFixed(1);
+      document.getElementById('lbl-ki').textContent = ki.toFixed(2);
+      document.getElementById('lbl-kd').textContent = kd.toFixed(2);
+    }
+
+    function applyPreset(mode) {
+      openLoopMode = false;
+      const isFurnace = document.getElementById('plant-type').value === 'furnace';
+      document.getElementById('sl-sp').value = isFurnace ? 120 : 140;
+
+      if (mode === 'open') {
+        openLoopMode = true;
+        document.getElementById('sl-kp').value = 0;
+        document.getElementById('sl-ki').value = 0;
+        document.getElementById('sl-kd').value = 0;
+        cv = 45;
+      } else if (mode === 'p_only') {
+        document.getElementById('sl-kp').value = 1.4;
+        document.getElementById('sl-ki').value = 0;
+        document.getElementById('sl-kd').value = 0;
+      } else if (mode === 'p_high') {
+        document.getElementById('sl-kp').value = 9.5;
+        document.getElementById('sl-ki').value = 0;
+        document.getElementById('sl-kd').value = 0;
+      } else if (mode === 'pi') {
+        document.getElementById('sl-kp').value = 2.0;
+        document.getElementById('sl-ki').value = 0.55;
+        document.getElementById('sl-kd').value = 0;
+      } else if (mode === 'pid') {
+        document.getElementById('sl-kp').value = 2.4;
+        document.getElementById('sl-ki').value = 0.50;
+        document.getElementById('sl-kd').value = 0.90;
+      }
+      integral = 0;
+      updateLabels();
+    }
+
+    function resetSim() {
+      const isFurnace = document.getElementById('plant-type').value === 'furnace';
+      const slSp = document.getElementById('sl-sp');
+      if (isFurnace) {
+        slSp.min = 30; slSp.max = 220; slSp.value = 120;
+        pv = 25.0;
+        document.getElementById('vis-title').textContent = 'Temperatura Forn (0–250 °C)';
+        document.getElementById('vis-fill').style.background = 'linear-gradient(180deg, #f43f5e, #b91c1c)';
+      } else {
+        slSp.min = 50; slSp.max = 200; slSp.value = 140;
+        pv = 40.0;
+        document.getElementById('vis-title').textContent = 'Nivell Dipòsit (40–200 mm)';
+        document.getElementById('vis-fill').style.background = 'linear-gradient(180deg, #38bdf8, #0284c7)';
+      }
+      integral = 0;
+      prevErr = 0;
+      histSP = [];
+      histPV = [];
+      histCV = [];
+      updateLabels();
+    }
+
+    function injectDisturbance() {
+      const isFurnace = document.getElementById('plant-type').value === 'furnace';
+      pv = Math.max(isFurnace ? 25 : 40, pv - (isFurnace ? 30 : 35));
+    }
+
+    function togglePause() {
+      paused = !paused;
+      document.getElementById('btn-pause').textContent = paused ? '▶ Reprendre' : '⏸ Pausar';
+    }
+
+    function stepSimulation() {
+      if (paused) return;
+
+      const isFurnace = document.getElementById('plant-type').value === 'furnace';
+      const maxScale = isFurnace ? 250.0 : 220.0;
+      const ambient = isFurnace ? 25.0 : 40.0;
+      const unit = getUnit();
+
+      const sp = parseFloat(document.getElementById('sl-sp').value);
+      const kp = parseFloat(document.getElementById('sl-kp').value);
+      const ki = parseFloat(document.getElementById('sl-ki').value);
+      const kd = parseFloat(document.getElementById('sl-kd').value);
+
+      const err = sp - pv;
+      const dt = 0.1; // 100 ms (OB30 típic del PDF)
+
+      let pTerm = 0, iTerm = 0, dTerm = 0;
+
+      if (openLoopMode) {
+        cv = 45.0; // Sortida fixa manual al 45%
+      } else {
+        pTerm = kp * err;
+        if (ki > 0) {
+          integral += err * dt;
+          // Anti-windup bàsic
+          integral = Math.max(-100 / ki, Math.min(100 / ki, integral));
+          iTerm = ki * integral;
+        } else {
+          integral = 0;
+        }
+        dTerm = kd * ((err - prevErr) / dt);
+        cv = Math.max(0, Math.min(100, pTerm + iTerm + dTerm));
+      }
+      prevErr = err;
+
+      // Model físic de 1r ordre amb inèrcia (planta)
+      // En equilibri, un 45% de CV manté ~125°C o ~135mm
+      const gainPlant = isFurnace ? 2.2 : 2.1;
+      const tau = isFurnace ? 2.4 : 1.8;
+      const targetPV = ambient + (cv / 100.0) * (gainPlant * 100.0);
+      pv += ((targetPV - pv) / tau) * dt;
+
+      histSP.push(sp);
+      histPV.push(pv);
+      histCV.push(cv);
+      if (histSP.length > maxPoints) {
+        histSP.shift(); histPV.shift(); histCV.shift();
+      }
+
+      // Actualitzar KPIs
+      document.getElementById('kpi-sp').textContent = sp.toFixed(1) + ' ' + unit;
+      document.getElementById('kpi-pv').textContent = pv.toFixed(1) + ' ' + unit;
+      document.getElementById('kpi-err').textContent = err.toFixed(1) + ' ' + unit;
+      document.getElementById('kpi-cv').textContent = cv.toFixed(1) + ' %';
+
+      document.getElementById('term-p').textContent = pTerm.toFixed(1) + '%';
+      document.getElementById('term-i').textContent = iTerm.toFixed(1) + '%';
+      document.getElementById('term-d').textContent = dTerm.toFixed(1) + '%';
+
+      // Visualització del tanc / forn
+      const pctPV = Math.max(0, Math.min(100, (pv / maxScale) * 100));
+      const pctSP = Math.max(0, Math.min(100, (sp / maxScale) * 100));
+      document.getElementById('vis-fill').style.height = pctPV + '%';
+      document.getElementById('vis-sp-line').style.bottom = pctSP + '%';
+
+      // Diagnòstic pedagògic dinàmic
+      const diag = document.getElementById('diag-box');
+      if (openLoopMode) {
+        diag.innerHTML = '🔓 <strong>Mode Llaç Obert (CV fixa al 45%):</strong> El controlador no mira el sensor PV. Si canvies el Setpoint (SP), la sortida CV no reacciona.';
+      } else if (ki === 0 && kp > 0 && kp < 5) {
+        diag.innerHTML = '📏 <strong>Només Control Proporcional (P):</strong> Fixa’t que PV s’estabilitza <em>per sota</em> del Setpoint. Aquest és l’<strong>error d’estat estacionari</strong>: sense acció Integral (Ki), el sistema no arriba mai al 100% de la consigna.';
+      } else if (kp >= 7 && kd === 0) {
+        diag.innerHTML = '〰️ <strong>Guany Proporcional (Kp) massa elevat:</strong> El sistema sobrecorregeix contínuament i apareixen <strong>oscil·lacions</strong> al voltant del Setpoint.';
+      } else if (ki > 0 && kd === 0) {
+        diag.innerHTML = '🎯 <strong>Control PI:</strong> L’acció Integral acumula l’error i aconsegueix que <strong>PV iguali exactament SP (Error = 0)</strong>, tot i que pot fer una petita pujada per sobre (<em>overshoot</em>).';
+      } else if (ki > 0 && kd > 0) {
+        diag.innerHTML = '✨ <strong>Control PID complet:</strong> La <strong>P</strong> dona rapidesa, la <strong>I</strong> elimina l’error estacionari i la <strong>D</strong> frena la inèrcia per evitar oscil·lacions.';
+      }
+
+      drawChart(maxScale);
+    }
+
+    function drawChart(maxScale) {
+      const canvas = document.getElementById('pid-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const left = 52, right = canvas.width - 45, top = 20, bottom = canvas.height - 25;
+      const w = right - left, h = bottom - top;
+
+      // Graella
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = top + (h / 4) * i;
+        ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px Consolas';
+        const valPV = Math.round(maxScale * (1 - i / 4));
+        const valCV = Math.round(100 * (1 - i / 4));
+        ctx.fillText(valPV, 10, y + 4);
+        ctx.fillText(valCV + '%', right + 6, y + 4);
+      }
+
+      function plotLine(arr, maxV, color, dash = []) {
+        if (arr.length < 2) return;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash(dash);
+        ctx.beginPath();
+        arr.forEach((v, idx) => {
+          const x = left + (idx / (maxPoints - 1)) * w;
+          const y = bottom - (Math.max(0, Math.min(maxV, v)) / maxV) * h;
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      plotLine(histCV, 100, '#22c55e', [4, 3]);
+      plotLine(histSP, maxScale, '#38bdf8');
+      plotLine(histPV, maxScale, '#f43f5e');
+    }
+
+    // Quiz senzill
+    const quiz = [
+      {
+        q: "1. Per què un controlador només Proporcional (P) no aconsegueix arribar exactament al Setpoint (SP) en un forn o dipòsit?",
+        opts: [
+          "Perquè si l'error (E = SP - PV) fos zero, la sortida proporcional (Kp · E) seria 0% i el forn es refredaria; necessita un error residual permanent.",
+          "Perquè el sensor de temperatura deixa de funcionar quan s'acosta a la consigna.",
+          "Perquè el PLC S7-1200 no admet números decimals."
+        ],
+        ans: 0,
+        exp: "Correcte! Aquest error permanent s'anomena error d'estat estacionari i s'elimina afegint l'acció Integral (I)."
+      },
+      {
+        q: "2. En un PLC Siemens S7-1200, on s'ha de cridar la instrucció PID_Compact?",
+        opts: [
+          "Dins del bloc principal OB1, perquè s'executi el més ràpid possible.",
+          "Dins d'un bloc d'interrupció cíclica (ex. OB30) amb un temps de cicle fix i regular.",
+          "Només en el bloc d'arrencada Startup (OB100)."
+        ],
+        ans: 1,
+        exp: "Exacte! L'algoritme PID necessita intervals de mostreig constants (ex. cada 100 ms a OB30) per calcular correctament la integral i la derivada."
+      },
+      {
+        q: "3. Quina funció fa l'acció Derivativa (D) en el control PID?",
+        opts: [
+          "Eliminar l'error acumulat durant minuts.",
+          "Reaccionar a la velocitat de canvi de l'error per frenar la sortida abans d'hora i reduir el sobrepassament (overshoot).",
+          "Convertir la sortida analògica 0-10 V en una entrada digital."
+        ],
+        ans: 1,
+        exp: "Molt bé! L'acció D anticipa la tendència i ajuda a estabilitzar el sistema sense oscil·lacions."
+      }
+    ];
+
+    function initQuiz() {
+      const box = document.getElementById('quiz-box');
+      quiz.forEach((item, i) => {
+        const card = document.createElement('div');
+        card.className = 'ctrl-group';
+        card.innerHTML = `<div style="font-weight:700; margin-bottom:0.5rem;">${item.q}</div>`;
+        item.opts.forEach((opt, j) => {
+          const b = document.createElement('button');
+          b.className = 'btn';
+          b.style.cssText = 'display:block; width:100%; text-align:left; margin-bottom:0.35rem;';
+          b.textContent = opt;
+          b.onclick = () => {
+            const fb = document.getElementById('qfb-' + i);
+            fb.style.color = j === item.ans ? '#86efac' : '#fca5a5';
+            fb.textContent = j === item.ans ? '✅ ' + item.exp : '❌ Torna-ho a provar!';
+          };
+          card.appendChild(b);
+        });
+        const fb = document.createElement('div');
+        fb.id = 'qfb-' + i;
+        fb.style.cssText = 'font-size:0.84rem; font-weight:600; margin-top:0.35rem;';
+        card.appendChild(fb);
+        box.appendChild(card);
+      });
+    }
+
+    resetSim();
+    initQuiz();
+    setInterval(stepSimulation, 100);
+  </script>
+</body>
+</html>

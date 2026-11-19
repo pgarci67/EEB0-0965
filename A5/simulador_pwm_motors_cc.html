@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador PWM, Motors CC, Drivers (L298N/BTS7960), PC817 i Encoder A/B</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-alt: #263349;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --siemens: #009999;
+      --siemens-dark: #007373;
+      --pwm: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+      --purple: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      padding-bottom: 3rem;
+    }
+
+    header {
+      background: linear-gradient(135deg, #091e2c 0%, #0f172a 100%);
+      border-bottom: 2px solid var(--siemens);
+      padding: 1.25rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+    }
+
+    .badge {
+      background: var(--siemens);
+      color: #fff;
+      font-weight: 700;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    h1 { font-size: 1.25rem; font-weight: 700; }
+    .subtitle { font-size: 0.85rem; color: var(--muted); }
+
+    nav.tabs {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+
+    nav.tabs button {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.84rem;
+      transition: all 0.2s;
+    }
+
+    nav.tabs button:hover { color: var(--text); border-color: var(--siemens); }
+    nav.tabs button.active { background: var(--siemens); color: #fff; border-color: var(--siemens); }
+
+    main {
+      max-width: 1320px;
+      margin: 1.5rem auto;
+      padding: 0 1.25rem;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .guide-box {
+      background: rgba(0, 153, 153, 0.1);
+      border: 1px solid var(--siemens);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .guide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .guide-header h2 { font-size: 1rem; color: #5eead4; }
+    .guide-body { margin-top: 0.65rem; font-size: 0.88rem; color: #e2e8f0; }
+    .guide-body.collapsed { display: none; }
+    .guide-body ul { margin-left: 1.25rem; margin-top: 0.3rem; }
+    .guide-body li { margin-bottom: 0.25rem; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(410px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card h3 {
+      font-size: 1.04rem;
+      margin-bottom: 0.85rem;
+      color: #f1f5f9;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.45rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.48rem 0.88rem;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover { border-color: var(--pwm); }
+    .btn.primary { background: var(--siemens); border-color: var(--siemens); color: #fff; }
+    .btn.primary:hover { background: var(--siemens-dark); }
+    .btn.active-btn { background: #1d4ed8; border-color: #60a5fa; color: #fff; }
+
+    .mono { font-family: 'Consolas', 'Courier New', monospace; font-weight: 600; }
+
+    .field-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .field-row label { font-size: 0.83rem; color: #7dd3fc; font-weight: 600; }
+    .field-row select, .field-row input[type="number"] {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 0.38rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.84rem;
+    }
+
+    input[type="range"] {
+      accent-color: var(--siemens);
+      cursor: pointer;
+    }
+
+    canvas.scope {
+      width: 100%;
+      height: 190px;
+      background: #091e2c;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: block;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .kpi-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem;
+      text-align: center;
+    }
+
+    .kpi-title { font-size: 0.75rem; color: var(--muted); }
+    .kpi-val { font-size: 1.05rem; font-weight: 700; color: #5eead4; font-family: 'Consolas', monospace; margin-top: 0.15rem; }
+
+    /* Pont en H visual */
+    .hbridge-box {
+      background: #091e2c;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .motor-rotor {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      border: 4px solid var(--siemens);
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 0 18px rgba(0, 153, 153, 0.3);
+    }
+
+    .rotor-bar {
+      width: 72%;
+      height: 8px;
+      background: linear-gradient(90deg, #ef4444 50%, #38bdf8 50%);
+      border-radius: 4px;
+    }
+
+    .plc-block {
+      background: #e2e8f0;
+      color: #0f172a;
+      border: 2px solid #64748b;
+      border-radius: 8px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.82rem;
+      overflow: hidden;
+      margin-bottom: 0.85rem;
+    }
+
+    .plc-head {
+      background: #1e40af;
+      color: #fff;
+      font-weight: 700;
+      padding: 0.35rem 0.7rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .plc-body {
+      padding: 0.8rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+    }
+
+    table.data-table th, table.data-table td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.65rem;
+      text-align: left;
+    }
+
+    table.data-table th { background: var(--bg); color: #7dd3fc; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="badge">MP 0965 · S7-1200</span>
+      <div>
+        <h1>PWM, Motors de Corrent Continu, Drivers i Encoder A/B</h1>
+        <div class="subtitle">Cicle de treball (Duty Cycle), Corba Parell-Velocitat, Pont H (L298N / BTS7960), Optoacoblador PC817, CTRL_PWM i HSC</div>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="active" onclick="openTab('t-pwm', this)">1. Senyal PWM & Tensió Mitjana</button>
+      <button onclick="openTab('t-motor', this)">2. Motor CC & Corba Parell-Velocitat</button>
+      <button onclick="openTab('t-driver', this)">3. Pont H, L298N & PC817 (24V→5V)</button>
+      <button onclick="openTab('t-plc', this)">4. S7-1200: CTRL_PWM & Encoder HSC</button>
+      <button onclick="openTab('t-quiz', this)">5. Test d'Autoavaluació</button>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 1: SENYAL PWM I TENSIÓ EQUIVALENT                          -->
+    <!-- =================================================================== -->
+    <section id="t-pwm" class="tab-content active">
+      <div class="guide-box">
+        <div class="guide-header" onclick="toggleGuide('g1')">
+          <h2>📘 Guia teòrica: Què és la Modulació per Amplada de Pols (PWM)?</h2>
+          <span style="font-size:0.8rem; color:#5eead4;">Clic per desplegar/plegar</span>
+        </div>
+        <div id="g1" class="guide-body">
+          <ul>
+            <li><strong>Simulació d'un senyal analògic des del món digital:</strong> Una sortida digital només pot valer <code>0 V</code> (LOW) o la tensió màxima <code>Vmax</code> (HIGH: 5 V, 12 V o 24 V).</li>
+            <li><strong>Període constant (<span class="mono">T = T_on + T_off = 1 / f</span>):</strong> El senyal no canvia d'amplitud, sinó el temps que roman en estat alt (<span class="mono">T_on</span>) dins de cada període.</li>
+            <li><strong>Cicle de treball (<span class="mono">Duty Cycle</span>):</strong> <span class="mono">D (%) = (T_on / T) · 100</span>. La tensió equivalent mitjana és <span class="mono">V_eq = D · V_max</span>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Oscil·loscopi Interactiu de Senyal PWM</h3>
+
+        <div class="field-row">
+          <label>Tensió d'alimentació (<span class="mono">V_max</span>):
+            <select id="pwm-vmax" onchange="updatePwm()">
+              <option value="5">5 V (Lògica Arduino / TTL)</option>
+              <option value="12" selected>12 V (Motor CC estàndard)</option>
+              <option value="24">24 V (Sortida PLC S7-1200 / Industrial)</option>
+            </select>
+          </label>
+
+          <label>Freqüència (<span class="mono">f</span>):
+            <select id="pwm-freq" onchange="updatePwm()">
+              <option value="10">10 Hz (T = 100 ms - ex. PDF)</option>
+              <option value="100" selected>100 Hz (T = 10 ms - TIA Portal)</option>
+              <option value="1000">1 kHz (T = 1 ms)</option>
+              <option value="20000">20 kHz (T = 50 µs - Ultrasònic)</option>
+            </select>
+          </label>
+
+          <label style="flex:1; min-width:220px;">
+            Duty Cycle (<span class="mono" id="lbl-duty">50%</span>):
+            <input type="range" id="pwm-duty" min="0" max="100" value="50" style="width:100%;" oninput="updatePwm()" />
+          </label>
+
+          <div style="display:flex; gap:0.35rem;">
+            <button class="btn" onclick="setDuty(0)">0%</button>
+            <button class="btn" onclick="setDuty(25)">25%</button>
+            <button class="btn" onclick="setDuty(50)">50%</button>
+            <button class="btn" onclick="setDuty(75)">75%</button>
+            <button class="btn" onclick="setDuty(100)">100%</button>
+          </div>
+        </div>
+
+        <canvas id="pwm-canvas" class="scope" width="1100" height="200"></canvas>
+
+        <div class="kpi-grid">
+          <div class="kpi-box">
+            <div class="kpi-title">Període Total (T = 1/f)</div>
+            <div class="kpi-val" id="kpi-period">10.00 ms</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-title">Temps en HIGH (T_on)</div>
+            <div class="kpi-val" style="color:#38bdf8;" id="kpi-ton">5.00 ms</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-title">Temps en LOW (T_off)</div>
+            <div class="kpi-val" style="color:#94a3b8;" id="kpi-toff">5.00 ms</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-title">Tensió Mitjana (V_eq = D · V_max)</div>
+            <div class="kpi-val" style="color:#fde68a;" id="kpi-veq">6.00 V</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-title">Comportament del Motor</div>
+            <div class="kpi-val" style="color:#86efac;" id="kpi-speed-txt">Velocitat Mitjana</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 2: MODEL DEL MOTOR CC I CORBA PARELL-VELOCITAT             -->
+    <!-- =================================================================== -->
+    <section id="t-motor" class="tab-content">
+      <div class="grid-2">
+        <div class="card">
+          <h3>Corba Característica Parell – Velocitat (<span class="mono">T / ω</span>) amb PWM</h3>
+          <p style="font-size:0.84rem; color:var(--muted); margin-bottom:0.75rem;">
+            Quan reduïm el <strong>Duty Cycle (D)</strong>, disminueix la tensió equivalent <span class="mono">V_eq = D · V_max</span> i tota la recta parell-velocitat es desplaça paral·lelament cap avall:
+            <span class="mono" style="color:#7dd3fc;">ω = ω_0(D) · (1 - T / T_stall(D))</span>.
+          </p>
+
+          <div class="field-row">
+            <label style="flex:1;">Duty Cycle (D): <span class="mono" id="m-duty-lbl">80%</span>
+              <input type="range" id="m-duty" min="10" max="100" value="80" style="width:100%;" oninput="updateMotorCurve()" />
+            </label>
+            <label style="flex:1;">Parell de càrrega (<span class="mono">T_load</span>): <span class="mono" id="m-load-lbl">0.20 Nm</span>
+              <input type="range" id="m-load" min="0" max="0.80" step="0.02" value="0.20" style="width:100%;" oninput="updateMotorCurve()" />
+            </label>
+          </div>
+
+          <canvas id="curve-canvas" class="scope" width="540" height="210"></canvas>
+        </div>
+
+        <div class="card">
+          <h3>Estat Electromecànic en Temps Real</h3>
+          <p style="font-size:0.84rem; color:var(--muted); margin-bottom:0.75rem;">
+            Equacions del motor CC: <span class="mono">V_eq = R·I + k_e·ω</span> &nbsp;|&nbsp; <span class="mono">T = k_t·I</span>
+          </p>
+
+          <div class="hbridge-box" style="margin-bottom:0.85rem;">
+            <div class="motor-rotor" id="motor-rotor">
+              <div class="rotor-bar"></div>
+            </div>
+            <div style="margin-top:0.65rem; font-size:0.9rem; font-weight:700;" id="rotor-status">Girant a 2,400 RPM</div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-box">
+              <div class="kpi-title">Velocitat en buit ω₀(D)</div>
+              <div class="kpi-val" id="m-w0">3200 RPM</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-title">Velocitat real amb càrrega</div>
+              <div class="kpi-val" style="color:#86efac;" id="m-wreal">2400 RPM</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-title">Corrent consumit (I = T/k_t)</div>
+              <div class="kpi-val" style="color:#fde68a;" id="m-curr">1.00 A</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-title">Força Contraelectromotriu (E)</div>
+              <div class="kpi-val" style="color:#38bdf8;" id="m-emf">18.0 V</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 3: PONT EN H (L298N / BTS7960) I OPTOACOBLADOR PC817       -->
+    <!-- =================================================================== -->
+    <section id="t-driver" class="tab-content">
+      <div class="grid-2">
+        <div class="card">
+          <h3>Simulador del Pont en H (L298N / BTS7960) — Control de Sentit i Fre</h3>
+          <p style="font-size:0.84rem; color:var(--muted); margin-bottom:0.75rem;">
+            Els transistors del Pont en H commuten en diagonal per invertir la polaritat aplicada al motor o frenar-lo.
+          </p>
+
+          <div class="field-row">
+            <button class="btn" id="btn-in1" onclick="toggleInput('in1')">IN1 = HIGH (1)</button>
+            <button class="btn" id="btn-in2" onclick="toggleInput('in2')">IN2 = LOW (0)</button>
+            <button class="btn active-btn" id="btn-ena" onclick="toggleInput('ena')">ENA (PWM) = ACTIU</button>
+          </div>
+
+          <canvas id="hbridge-canvas" class="scope" width="520" height="210"></canvas>
+          <div id="hb-status" style="margin-top:0.65rem; font-weight:700; color:#5eead4; font-size:0.9rem;"></div>
+        </div>
+
+        <div class="card">
+          <h3>Adaptació PLC 24 V → Driver 5 V amb Optoacoblador PC817</h3>
+          <p style="font-size:0.84rem; color:var(--muted); margin-bottom:0.75rem;">
+            Un PLC S7-1200 treu <strong>24 V</strong> per les sortides de transistor, mentre que l'L298N admet màxim <strong>5 V lògics</strong>. L'optoacoblador <strong>PC817</strong> aïlla galvànicament tots dos circuits mitjançant llum infraroja.
+          </p>
+
+          <div class="field-row">
+            <label>Configuració del fototransistor:</label>
+            <select id="opto-cfg" onchange="updateOpto()">
+              <option value="ce" selected>1. Emissor Comú (Col·lector + R_pullup 4.7kΩ) → INVERSORA</option>
+              <option value="ef">2. Seguidor d'Emissor (Emitter Follower) → NO INVERSORA</option>
+            </select>
+            <button class="btn primary" id="btn-plc-q" onclick="togglePlcOut()">Sortida PLC Q0.0 = 24 V (ON)</button>
+          </div>
+
+          <div style="background:var(--bg); border:1px solid var(--border); border-radius:9px; padding:1rem; margin-bottom:0.8rem;">
+            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.5rem;">
+              <span>Entrada PLC (Costat LED, R_limit = 3.3 kΩ): <strong class="mono" id="opto-in-v" style="color:#38bdf8;">24.0 V (LED Encès)</strong></span>
+              <span>Corrent LED (<span class="mono">I_F</span>): <strong class="mono" id="opto-if" style="color:#fde68a;">6.9 mA</strong></span>
+            </div>
+            <div style="font-size:0.95rem; padding-top:0.5rem; border-top:1px solid var(--border);">
+              Sortida cap al Driver L298N (<span class="mono">V_OUT</span>):
+              <strong class="mono" id="opto-out-v" style="color:#fca5a5; font-size:1.1rem;">0.2 V (Nivell Lògic 0)</strong>
+            </div>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr><th>Driver</th><th>Tensió Motor</th><th>Corrent màx.</th><th>Particularitats clau</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>L298N</strong></td><td>3 V – 35 V</td><td>2 A (0.8–1 A cont.)</td><td>Caiguda interna ~3 V; Jumper regulador 5 V (obrir si Vmotor &gt; 12–15 V).</td></tr>
+              <tr><td><strong>BTS7960</strong></td><td>6 V – 27 V</td><td>Fins a 43 A</td><td>Alta potència (MOSFETs), PWM fins a 25 kHz, pins <code>LPWM</code> i <code>RPWM</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 4: S7-1200 (CTRL_PWM I ENCODER INCREMENTAL A/B AMB HSC)    -->
+    <!-- =================================================================== -->
+    <section id="t-plc" class="tab-content">
+      <div class="grid-2">
+        <div class="card">
+          <h3>Bloc <code>CTRL_PWM</code> i Registre d'Adreça <code>%QW1006</code> (TIA Portal)</h3>
+          <p style="font-size:0.84rem; color:var(--muted); margin-bottom:0.75rem;">
+            Amb format de durada d'impuls en <strong>centèsimes (0 a 100)</strong>, el PLC escriu el valor de <code>Duty_change</code> directament a la paraula de sortida assignada (ex. <code>%QW1006</code>).
+          </p>
+
+          <div class="plc-block">
+            <div class="plc-head">
+              <span>"CTRL_PWM_1" (%DB2)</span>
+              <span>HW_PWM: 268 ("Local~PWM4")</span>
+            </div>
+            <div class="plc-body">
+              <div>
+                <button class="btn primary" id="btn-ctrl-en" onclick="toggleCtrlPwm()">ENABLE := TRUE</button>
+              </div>
+              <div>
+                <label><code>Duty_change</code> (%QW1006):
+                  <input type="number" id="qw-val" min="0" max="100" value="50" style="width:70px;" onchange="updatePlcPwm()" />
+                </label>
+              </div>
+              <div>BUSY: <strong id="ctrl-busy" style="color:#15803d;">TRUE</strong></div>
+              <div>STATUS: <strong id="ctrl-stat">16#0000 (OK)</strong></div>
+            </div>
+          </div>
+
+          <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:0.75rem; font-size:0.84rem;">
+            <div>• Sortida física assignada: <code>%Q0.6</code> (Sortida ràpida de transistor 100 kHz).</div>
+            <div>• <strong>Nota important:</strong> Un cop configurada <code>%Q0.6</code> com a PWM a Hardware, deixa de funcionar com a bobina digital normal <code>=( )</code>.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Encoder Incremental A/B en Quadratura (90°) i Comptador Ràpid (HSC)</h3>
+          <p style="font-size:0.84rem; color:var(--muted); margin-bottom:0.75rem;">
+            L'encoder genera dos senyals quadrats (<strong>Canal A</strong> i <strong>Canal B</strong>) desfasats 90° connectats a les entrades ràpides <strong>HSC</strong> del PLC (ex. <code>%I0.0</code> i <code>%I0.1</code>). Si és sortida <strong>NPN</strong>, cal posar resistències <em>pull-up</em> de 2,2 kΩ–4,7 kΩ a +24 V.
+          </p>
+
+          <div class="field-row">
+            <label>Sentit de gir de l'eix:</label>
+            <select id="enc-dir" onchange="drawEncoderWaves()">
+              <option value="1" selected>CW (Horari / Endavant) → Canal A avança B (+90°)</option>
+              <option value="-1">CCW (Antihorari / Enrere) → Canal B avança A (-90°)</option>
+            </select>
+            <button class="btn primary" onclick="pulseEncoderStep()">+1 Pols (Girar eix)</button>
+            <button class="btn" onclick="resetHsc()">Reset HSC (ID1000 := 0)</button>
+          </div>
+
+          <canvas id="enc-canvas" class="scope" width="520" height="155"></canvas>
+
+          <div class="kpi-grid">
+            <div class="kpi-box">
+              <div class="kpi-title">Comptador HSC (ID1000)</div>
+              <div class="kpi-val" id="hsc-count">0</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-title">Desfasament A / B</div>
+              <div class="kpi-val" style="color:#a855f7;" id="hsc-phase">A avança B (CW)</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-title">Angle (Encoder 360 PPR)</div>
+              <div class="kpi-val" style="color:#fde68a;" id="hsc-deg">0.0°</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 5: TEST D'AUTOAVALUACIÓ                                    -->
+    <!-- =================================================================== -->
+    <section id="t-quiz" class="tab-content">
+      <div class="card">
+        <h3>Test d'Autoavaluació: PWM, Motors CC, Drivers i Encoder A/B</h3>
+        <div id="quiz-container"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function openTab(id, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('nav.tabs button').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      btn.classList.add('active');
+      if (id === 't-motor') updateMotorCurve();
+      if (id === 't-driver') { drawHBridge(); updateOpto(); }
+      if (id === 't-plc') drawEncoderWaves();
+    }
+
+    function toggleGuide(id) {
+      document.getElementById(id).classList.toggle('collapsed');
+    }
+
+    // --- PESTANYA 1: PWM ---
+    function setDuty(val) {
+      document.getElementById('pwm-duty').value = val;
+      updatePwm();
+    }
+
+    function updatePwm() {
+      const vmax = parseFloat(document.getElementById('pwm-vmax').value);
+      const freq = parseFloat(document.getElementById('pwm-freq').value);
+      const duty = parseFloat(document.getElementById('pwm-duty').value);
+
+      document.getElementById('lbl-duty').textContent = duty + '%';
+
+      const T_ms = 1000 / freq;
+      const Ton_ms = T_ms * (duty / 100);
+      const Toff_ms = T_ms - Ton_ms;
+      const Veq = vmax * (duty / 100);
+
+      document.getElementById('kpi-period').textContent = T_ms >= 1 ? T_ms.toFixed(2) + ' ms' : (T_ms * 1000).toFixed(0) + ' µs';
+      document.getElementById('kpi-ton').textContent = Ton_ms >= 1 ? Ton_ms.toFixed(2) + ' ms' : (Ton_ms * 1000).toFixed(0) + ' µs';
+      document.getElementById('kpi-toff').textContent = Toff_ms >= 1 ? Toff_ms.toFixed(2) + ' ms' : (Toff_ms * 1000).toFixed(0) + ' µs';
+      document.getElementById('kpi-veq').textContent = Veq.toFixed(2) + ' V';
+
+      let spdTxt = 'Aturat (0%)';
+      if (duty > 0 && duty < 35) spdTxt = 'Gira Lent';
+      else if (duty >= 35 && duty < 70) spdTxt = 'Velocitat Mitjana';
+      else if (duty >= 70 && duty < 100) spdTxt = 'Gira Ràpid';
+      else if (duty === 100) spdTxt = 'Velocitat Màxima';
+      document.getElementById('kpi-speed-txt').textContent = spdTxt;
+
+      // Dibuix oscil·loscopi
+      const canvas = document.getElementById('pwm-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const left = 65, right = 1060, top = 30, bottom = 165;
+      const cycles = 4;
+      const cycleW = (right - left) / cycles;
+
+      // Eixos i graella
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(left, top); ctx.lineTo(left, bottom); ctx.lineTo(right, bottom);
+      ctx.stroke();
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px Consolas';
+      ctx.fillText(vmax + ' V', 15, top + 6);
+      ctx.fillText('0 V', 22, bottom);
+
+      // Línia tensió mitjana V_eq
+      const yAvg = bottom - (bottom - top) * (duty / 100);
+      ctx.strokeStyle = '#fde68a';
+      ctx.setLineDash([6, 4]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(left, yAvg); ctx.lineTo(right, yAvg);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#fde68a';
+      ctx.fillText(`V_eq = ${Veq.toFixed(2)} V`, right - 125, yAvg - 7);
+
+      // Senyal PWM
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let c = 0; c < cycles; c++) {
+        const x0 = left + c * cycleW;
+        const xOn = x0 + cycleW * (duty / 100);
+        const xEnd = x0 + cycleW;
+        if (duty === 0) {
+          ctx.moveTo(x0, bottom); ctx.lineTo(xEnd, bottom);
+        } else if (duty === 100) {
+          ctx.moveTo(x0, top); ctx.lineTo(xEnd, top);
+        } else {
+          ctx.moveTo(x0, bottom);
+          ctx.lineTo(x0, top);
+          ctx.lineTo(xOn, top);
+          ctx.lineTo(xOn, bottom);
+          ctx.lineTo(xEnd, bottom);
+        }
+      }
+      ctx.stroke();
+    }
+
+    // --- PESTANYA 2: CORBA PARELL-VELOCITAT I ROTOR ---
+    let rotorAngle = 0;
+    let currentRpm = 2400;
+
+    setInterval(() => {
+      if (currentRpm > 0) {
+        rotorAngle = (rotorAngle + (currentRpm / 60) * 6) % 360;
+        const bar = document.querySelector('#motor-rotor .rotor-bar');
+        if (bar) bar.style.transform = `rotate(${rotorAngle}deg)`;
+      }
+    }, 30);
+
+    function updateMotorCurve() {
+      const duty = parseFloat(document.getElementById('m-duty').value) / 100;
+      const tLoad = parseFloat(document.getElementById('m-load').value);
+
+      document.getElementById('m-duty-lbl').textContent = Math.round(duty * 100) + '%';
+      document.getElementById('m-load-lbl').textContent = tLoad.toFixed(2) + ' Nm';
+
+      // Paràmetres nominals a D=100% (24V): w0_max = 4000 RPM, T_stall_max = 1.0 Nm, kt = 0.2 Nm/A
+      const w0 = 4000 * duty;
+      const tStall = 1.0 * duty;
+      let wReal = 0;
+      if (tLoad < tStall) {
+        wReal = w0 * (1 - tLoad / tStall);
+      }
+      currentRpm = wReal;
+
+      const currA = Math.min(tLoad, tStall) / 0.20;
+      const emf = (wReal / 4000) * 22.0;
+
+      document.getElementById('m-w0').textContent = Math.round(w0) + ' RPM';
+      document.getElementById('m-wreal').textContent = wReal > 0 ? Math.round(wReal) + ' RPM' : '0 RPM (Bloquejat!)';
+      document.getElementById('m-curr').textContent = currA.toFixed(2) + ' A';
+      document.getElementById('m-emf').textContent = emf.toFixed(1) + ' V';
+      document.getElementById('rotor-status').textContent = wReal > 0
+        ? `Girant a ${Math.round(wReal)} RPM`
+        : '🚨 Motor bloquejat (Parell de càrrega ≥ Parell d'arrencada)!';
+
+      // Dibuix corba T/w
+      const canvas = document.getElementById('curve-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const x0 = 55, y0 = 180, xMax = 500, yTop = 25;
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x0, yTop); ctx.lineTo(x0, y0); ctx.lineTo(xMax, y0);
+      ctx.stroke();
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px Consolas';
+      ctx.fillText('Velocitat ω (RPM)', 10, 15);
+      ctx.fillText('Parell T (Nm)', 420, 198);
+
+      // Corba nominal 100% en gris discontinu
+      ctx.strokeStyle = '#64748b';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(x0, yTop);
+      ctx.lineTo(xMax, y0);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Corba actual segons D
+      const yW0 = y0 - (y0 - yTop) * duty;
+      const xStall = x0 + (xMax - x0) * duty;
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x0, yW0);
+      ctx.lineTo(xStall, y0);
+      ctx.stroke();
+
+      // Punt de treball actual
+      const xLoad = x0 + (xMax - x0) * (tLoad / 1.0);
+      const yWork = y0 - (y0 - yTop) * (wReal / 4000);
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath();
+      ctx.arc(xLoad, yWork, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillText('Punt de treball', xLoad + 8, yWork - 6);
+    }
+
+    // --- PESTANYA 3: PONT EN H I PC817 ---
+    let hb = { in1: true, in2: false, ena: true };
+
+    function toggleInput(key) {
+      hb[key] = !hb[key];
+      document.getElementById('btn-in1').textContent = `IN1 = ${hb.in1 ? 'HIGH (1)' : 'LOW (0)'}`;
+      document.getElementById('btn-in2').textContent = `IN2 = ${hb.in2 ? 'HIGH (1)' : 'LOW (0)'}`;
+      const enaBtn = document.getElementById('btn-ena');
+      enaBtn.textContent = `ENA (PWM) = ${hb.ena ? 'ACTIU' : 'DESACTIVAT'}`;
+      enaBtn.className = 'btn' + (hb.ena ? ' active-btn' : '');
+      drawHBridge();
+    }
+
+    function drawHBridge() {
+      const canvas = document.getElementById('hbridge-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Esquema simplificat 4 transistors Q1, Q2, Q3, Q4 + Motor central
+      const cx = 260, cy = 105;
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+
+      // Branques esquerra i dreta
+      ctx.strokeRect(150, 35, 220, 140);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(225, 85, 70, 40);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.strokeRect(225, 85, 70, 40);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 13px Consolas';
+      ctx.fillText('MOTOR', 240, 110);
+
+      // Estat conducció
+      let stateTxt = '';
+      let q1 = false, q2 = false, q3 = false, q4 = false;
+
+      if (!hb.ena) {
+        stateTxt = '⏹ ENA = 0: Tots els transistors oberts (Motor lliure per inèrcia).';
+      } else if (hb.in1 && !hb.in2) {
+        q1 = true; q4 = true;
+        stateTxt = '➡ IN1=1, IN2=0: Condueixen Q1 i Q4 → Gir Horari (Endavant).';
+      } else if (!hb.in1 && hb.in2) {
+        q3 = true; q2 = true;
+        stateTxt = '⬅ IN1=0, IN2=1: Condueixen Q3 i Q2 → Gir Antihorari (Enrere).';
+      } else {
+        stateTxt = '🛑 IN1 = IN2: Fre electromagnètic actiu (Borna A i B al mateix potencial).';
+      }
+
+      document.getElementById('hb-status').textContent = stateTxt;
+
+      function drawTr(x, y, label, active) {
+        ctx.fillStyle = active ? '#22c55e' : '#334155';
+        ctx.fillRect(x - 22, y - 14, 44, 28);
+        ctx.strokeStyle = active ? '#86efac' : '#64748b';
+        ctx.strokeRect(x - 22, y - 14, 44, 28);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 11px Consolas';
+        ctx.fillText(label, x - 10, y + 4);
+      }
+
+      drawTr(150, 58, 'Q1', q1);
+      drawTr(150, 152, 'Q2', q2);
+      drawTr(370, 58, 'Q3', q3);
+      drawTr(370, 152, 'Q4', q4);
+
+      ctx.fillStyle = '#fde68a';
+      ctx.fillText('+Vcc (Motor)', 225, 22);
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('GND', 250, 195);
+    }
+
+    let plcOut24 = true;
+    function togglePlcOut() {
+      plcOut24 = !plcOut24;
+      document.getElementById('btn-plc-q').textContent = plcOut24 ? 'Sortida PLC Q0.0 = 24 V (ON)' : 'Sortida PLC Q0.0 = 0 V (OFF)';
+      updateOpto();
+    }
+
+    function updateOpto() {
+      const cfg = document.getElementById('opto-cfg').value;
+      document.getElementById('opto-in-v').textContent = plcOut24 ? '24.0 V (LED Encès)' : '0.0 V (LED Apagat)';
+      document.getElementById('opto-if').textContent = plcOut24 ? '6.9 mA' : '0.0 mA';
+
+      const outEl = document.getElementById('opto-out-v');
+      if (cfg === 'ce') {
+        // Inversora
+        if (plcOut24) {
+          outEl.style.color = '#fca5a5';
+          outEl.textContent = '0.2 V (Nivell Lògic 0 — Inversió per Col·lector Comú)';
+        } else {
+          outEl.style.color = '#86efac';
+          outEl.textContent = '5.0 V (Nivell Lògic 1 via R_pullup 4.7kΩ)';
+        }
+      } else {
+        // Seguidor d'emissor (No inversora)
+        if (plcOut24) {
+          outEl.style.color = '#86efac';
+          outEl.textContent = '4.5 V (Nivell Lògic 1 — Seguidor d'Emissor No Inversor)';
+        } else {
+          outEl.style.color = '#fca5a5';
+          outEl.textContent = '0.0 V (Nivell Lògic 0)';
+        }
+      }
+    }
+
+    // --- PESTANYA 4: S7-1200 & ENCODER HSC ---
+    let ctrlEnabled = true;
+    function toggleCtrlPwm() {
+      ctrlEnabled = !ctrlEnabled;
+      document.getElementById('btn-ctrl-en').textContent = ctrlEnabled ? 'ENABLE := TRUE' : 'ENABLE := FALSE';
+      document.getElementById('ctrl-busy').textContent = ctrlEnabled ? 'TRUE' : 'FALSE';
+      document.getElementById('ctrl-busy').style.color = ctrlEnabled ? '#15803d' : '#64748b';
+    }
+
+    function updatePlcPwm() {
+      let v = parseInt(document.getElementById('qw-val').value, 10) || 0;
+      v = Math.max(0, Math.min(100, v));
+      document.getElementById('qw-val').value = v;
+    }
+
+    let hscCount = 0;
+    function pulseEncoderStep() {
+      const dir = parseInt(document.getElementById('enc-dir').value, 10);
+      hscCount += dir;
+      document.getElementById('hsc-count').textContent = hscCount;
+      document.getElementById('hsc-deg').textContent = ((hscCount % 360) * 1.0).toFixed(1) + '°';
+    }
+
+    function resetHsc() {
+      hscCount = 0;
+      document.getElementById('hsc-count').textContent = '0';
+      document.getElementById('hsc-deg').textContent = '0.0°';
+    }
+
+    function drawEncoderWaves() {
+      const canvas = document.getElementById('enc-canvas');
+      const ctx = canvas.getContext('2d');
+      const dir = parseInt(document.getElementById('enc-dir').value, 10);
+      document.getElementById('hsc-phase').textContent = dir === 1 ? 'A avança B (CW)' : 'B avança A (CCW)';
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font = 'bold 12px Consolas';
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText('Canal A (%I0.0)', 10, 35);
+      ctx.fillStyle = '#a855f7';
+      ctx.fillText('Canal B (%I0.1)', 10, 105);
+
+      const startX = 135, endX = 500, stepW = 60;
+
+      // Canal A
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let x = startX; x < endX; x += stepW) {
+        ctx.moveTo(x, 65); ctx.lineTo(x, 25);
+        ctx.lineTo(x + stepW / 2, 25); ctx.lineTo(x + stepW / 2, 65);
+        ctx.lineTo(x + stepW, 65);
+      }
+      ctx.stroke();
+
+      // Canal B desfasat 90° (+stepW/4 si CW, -stepW/4 si CCW)
+      const shift = dir === 1 ? stepW / 4 : -stepW / 4;
+      ctx.strokeStyle = '#a855f7';
+      ctx.beginPath();
+      for (let x = startX; x < endX; x += stepW) {
+        const sx = x + shift;
+        ctx.moveTo(sx, 135); ctx.lineTo(sx, 95);
+        ctx.lineTo(sx + stepW / 2, 95); ctx.lineTo(sx + stepW / 2, 135);
+        ctx.lineTo(sx + stepW, 135);
+      }
+      ctx.stroke();
+    }
+
+    // --- PESTANYA 5: QUIZ ---
+    const quizData = [
+      {
+        q: "1. Si alimentem un motor CC amb 24 V a través d'un senyal PWM amb un Duty Cycle del 25%, quina és la tensió equivalent mitjana aplicada?",
+        opts: [
+          "6 V (ja que V_eq = 0,25 · 24 V = 6 V).",
+          "24 V constants, però a un quart de freqüència.",
+          "12 V."
+        ],
+        ans: 0,
+        exp: "Correcte! V_eq = D · V_max = 0,25 · 24 V = 6 V."
+      },
+      {
+        q: "2. Per què utilitzem un optoacoblador PC817 entre una sortida digital d'un PLC S7-1200 i el driver L298N?",
+        opts: [
+          "Per augmentar la potència del motor fins a 43 A.",
+          "Per adaptar el nivell de tensió (24 V del PLC a 5 V lògics del driver) i aïllar galvànicament la lògica del circuit de potència.",
+          "Per convertir el motor de corrent continu en un motor trifàsic."
+        ],
+        ans: 1,
+        exp: "Exacte! Si connectem 24 V directament a les entrades lògiques de 5 V de l'L298N, el circuit integrat es crema."
+      },
+      {
+        q: "3. Com determina un comptador ràpid (HSC) del S7-1200 el sentit de gir d'un encoder incremental A/B en quadratura?",
+        opts: [
+          "Mesurant el voltatge analògic del canal A.",
+          "Analitzant el desfasament de 90° entre els canals A i B (si A avança B gira en un sentit; si B avança A gira en el contrari).",
+          "Comptant només els polsos del canal Z (0)."
+        ],
+        ans: 1,
+        exp: "Molt bé! El desfasament de 90° (quadratura) permet detectar tant cada increment de posició com el sentit de gir CW/CCW."
+      }
+    ];
+
+    function renderQuiz() {
+      const c = document.getElementById('quiz-container');
+      quizData.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:9px; padding:1rem; margin-bottom:0.85rem;';
+        div.innerHTML = `<div style="font-weight:700; margin-bottom:0.55rem;">${item.q}</div>`;
+        item.opts.forEach((o, oi) => {
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.style.cssText = 'display:block; width:100%; text-align:left; margin-bottom:0.4rem;';
+          btn.textContent = o;
+          btn.onclick = () => {
+            const fb = document.getElementById(`q-fb-${idx}`);
+            if (oi === item.ans) {
+              fb.style.color = '#86efac';
+              fb.textContent = '✅ ' + item.exp;
+            } else {
+              fb.style.color = '#fca5a5';
+              fb.textContent = '❌ Torna-ho a intentar!';
+            }
+          };
+          div.appendChild(btn);
+        });
+        const fb = document.createElement('div');
+        fb.id = `q-fb-${idx}`;
+        fb.style.cssText = 'font-size:0.85rem; margin-top:0.4rem; font-weight:600;';
+        div.appendChild(fb);
+        c.appendChild(div);
+      });
+    }
+
+    updatePwm();
+    updateMotorCurve();
+    drawHBridge();
+    updateOpto();
+    drawEncoderWaves();
+    renderQuiz();
+  </script>
+</body>
+</html>
