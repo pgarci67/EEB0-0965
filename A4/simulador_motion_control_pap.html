@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador Motion Control i Motors Pas a Pas (S7-1200 + TB6600)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-alt: #263349;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --siemens: #009999;
+      --siemens-dark: #007373;
+      --pto: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+      --purple: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      padding-bottom: 3rem;
+    }
+
+    header {
+      background: linear-gradient(135deg, #091e2c 0%, #0f172a 100%);
+      border-bottom: 2px solid var(--siemens);
+      padding: 1.25rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+    }
+
+    .badge {
+      background: var(--siemens);
+      color: #fff;
+      font-weight: 700;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    h1 { font-size: 1.25rem; font-weight: 700; }
+    .subtitle { font-size: 0.85rem; color: var(--muted); }
+
+    nav.tabs {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+
+    nav.tabs button {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.84rem;
+      transition: all 0.2s;
+    }
+
+    nav.tabs button:hover { color: var(--text); border-color: var(--siemens); }
+    nav.tabs button.active { background: var(--siemens); color: #fff; border-color: var(--siemens); }
+
+    main {
+      max-width: 1320px;
+      margin: 1.5rem auto;
+      padding: 0 1.25rem;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .guide-box {
+      background: rgba(0, 153, 153, 0.1);
+      border: 1px solid var(--siemens);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .guide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .guide-header h2 { font-size: 1rem; color: #5eead4; }
+    .guide-body { margin-top: 0.65rem; font-size: 0.88rem; color: #e2e8f0; }
+    .guide-body.collapsed { display: none; }
+    .guide-body ul { margin-left: 1.25rem; margin-top: 0.3rem; }
+    .guide-body li { margin-bottom: 0.25rem; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card h3 {
+      font-size: 1.04rem;
+      margin-bottom: 0.85rem;
+      color: #f1f5f9;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.45rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.48rem 0.88rem;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover { border-color: var(--pto); }
+    .btn.primary { background: var(--siemens); border-color: var(--siemens); color: #fff; }
+    .btn.primary:hover { background: var(--siemens-dark); }
+    .btn.warn { background: rgba(245, 158, 11, 0.2); border-color: var(--warn); color: #fde68a; }
+    .btn.danger { background: rgba(239, 68, 68, 0.2); border-color: var(--err); color: #fca5a5; }
+    .btn.active-btn { background: #1d4ed8; border-color: #60a5fa; color: #fff; }
+
+    .mono { font-family: 'Consolas', 'Courier New', monospace; font-weight: 600; }
+
+    .field-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .field-row label { font-size: 0.83rem; color: #7dd3fc; font-weight: 600; }
+    .field-row select, .field-row input {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 0.38rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.84rem;
+    }
+
+    /* Pestanya 1: Eix lineal + PLCopen */
+    .axis-stage {
+      background: #091e2c;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .rail-container {
+      position: relative;
+      height: 85px;
+      margin: 1rem 0 0.5rem 0;
+      background: #132238;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+    }
+
+    .screw-bar {
+      width: 100%;
+      height: 10px;
+      background: repeating-linear-gradient(45deg, #64748b, #64748b 6px, #475569 6px, #475569 12px);
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .limit-marker {
+      position: absolute;
+      top: -22px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+
+    .carriage {
+      position: absolute;
+      top: -24px;
+      width: 48px;
+      height: 44px;
+      background: linear-gradient(135deg, #009999, #0284c7);
+      border: 2px solid #fff;
+      border-radius: 6px;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      transition: left 0.08s linear;
+    }
+
+    .status-leds {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .led-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #475569;
+    }
+    .dot.on-green { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+    .dot.on-blue { background: var(--pto); box-shadow: 0 0 8px var(--pto); }
+    .dot.on-red { background: var(--err); box-shadow: 0 0 8px var(--err); }
+
+    .plcopen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .mc-block {
+      background: #e2e8f0;
+      color: #0f172a;
+      border: 2px solid #64748b;
+      border-radius: 8px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.8rem;
+      overflow: hidden;
+    }
+
+    .mc-head {
+      background: #1e40af;
+      color: #fff;
+      font-weight: 700;
+      text-align: center;
+      padding: 0.28rem;
+    }
+
+    .mc-body { padding: 0.65rem; display: flex; flex-direction: column; gap: 0.45rem; }
+
+    /* Pestanya 2: Senyals PTO i TB6600 */
+    canvas.scope {
+      width: 100%;
+      height: 170px;
+      background: #091e2c;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: block;
+    }
+
+    .dip-bank {
+      display: flex;
+      gap: 0.5rem;
+      background: #dc2626;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      width: fit-content;
+      border: 2px solid #991b1b;
+      margin: 0.65rem 0;
+    }
+
+    .dip-sw {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .dip-slot {
+      width: 24px;
+      height: 44px;
+      background: #7f1d1d;
+      border-radius: 4px;
+      padding: 3px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    .dip-slot.on { justify-content: flex-start; }
+
+    .dip-nub {
+      width: 100%;
+      height: 18px;
+      background: #f8fafc;
+      border-radius: 2px;
+    }
+
+    .dip-label { font-size: 0.75rem; font-weight: 800; color: #fff; font-family: 'Consolas', monospace; }
+
+    /* Pestanya 3: Command Table */
+    table.cmd-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      margin-bottom: 0.85rem;
+    }
+
+    table.cmd-table th, table.cmd-table td {
+      border: 1px solid var(--border);
+      padding: 0.48rem 0.6rem;
+      text-align: left;
+    }
+
+    table.cmd-table th { background: var(--bg); color: #7dd3fc; }
+    table.cmd-table tr.active-step { background: rgba(0, 153, 153, 0.25); }
+
+    .log-box {
+      background: #091e2c;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7rem;
+      font-family: 'Consolas', monospace;
+      font-size: 0.8rem;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="badge">MP 0965 · S7-1200</span>
+      <div>
+        <h1>Motion Control i Motors Pas a Pas (PTO · TB6600 · PLCopen)</h1>
+        <div class="subtitle">Signal Boards (200 kHz), Objecte Tecnològic TO_PositioningAxis, Homing, Perfil en S i Command Table</div>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="active" onclick="openTab('t-axis', this)">1. Eix Lineal & Blocs PLCopen</button>
+      <button onclick="openTab('t-pto', this)">2. Tren de Polsos (PTO) & TB6600</button>
+      <button onclick="openTab('t-cmd', this)">3. Command Table & Perfils V/t</button>
+      <button onclick="openTab('t-calc', this)">4. Calculadora Mecànica TO</button>
+      <button onclick="openTab('t-quiz', this)">5. Test d'Autoavaluació</button>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 1: EIX LINEAL I BLOCS PLCOPEN (TO_PositioningAxis)         -->
+    <!-- =================================================================== -->
+    <section id="t-axis" class="tab-content active">
+      <div class="guide-box">
+        <div class="guide-header" onclick="toggleGuide('g1')">
+          <h2>📘 Guia teòrica: L'Objecte Tecnològic (TO) i la Seqüència de Programació PLCopen</h2>
+          <span style="font-size:0.8rem; color:#5eead4;">Clic per desplegar/plegar</span>
+        </div>
+        <div id="g1" class="guide-body">
+          <ul>
+            <li><strong>1. Habilitar l'eix (<code>MC_Power</code>):</strong> Dóna energia al driver (<code>Enable = TRUE</code>). Sense això l'eix està bloquejat i no es pot moure.</li>
+            <li><strong>2. Referenciar (<code>MC_Home</code>):</strong> Obligatori amb motors PaP o encoders incrementals per establir el Zero Màquina (<code>StatusWord.X5 = Homed</code>). Admet <strong>Mode 0 (Directe)</strong> i <strong>Mode 3 (Actiu, buscant sensor físic FC_Ref)</strong>.</li>
+            <li><strong>3. Posicionar:</strong> <code>MC_MoveRelative</code> mou una distància respecte la posició actual (no requereix Homing); <code>MC_MoveAbsolute</code> va a una cota exacta respecte el Zero Màquina (requereix Homing previ).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span>Simulador Interactiu <code>TO_PositioningAxis</code> ("Eje_1 [DB1]")</span>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button class="btn warn" onclick="simulateStepLoss()">⚠️ Simular pèrdua de passes (Llaç Obert)</button>
+            <button class="btn danger" onclick="triggerLimitError()">🛑 Simular topall Final de Carrera</button>
+          </div>
+        </h3>
+
+        <div class="status-leds">
+          <div class="led-pill"><span class="dot" id="led-power"></span> Habilitat (<code>MC_Power</code>)</div>
+          <div class="led-pill"><span class="dot" id="led-homed"></span> Referenciat (<code>Homed</code>)</div>
+          <div class="led-pill"><span class="dot" id="led-busy"></span> En moviment (<code>Busy</code>)</div>
+          <div class="led-pill"><span class="dot" id="led-error"></span> Error d'eix (<code>Error</code>)</div>
+        </div>
+
+        <div class="axis-stage">
+          <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; font-size:0.86rem;">
+            <span>Posició TO (PLC): <strong class="mono" style="color:#5eead4; font-size:1.05rem;" id="pos-plc">0.0 mm</strong></span>
+            <span>Posició Real Mecànica: <strong class="mono" style="color:#fde68a; font-size:1.05rem;" id="pos-real">0.0 mm</strong></span>
+            <span>Velocitat actual: <strong class="mono" style="color:#38bdf8;" id="vel-curr">0.0 mm/s</strong></span>
+            <span>Polsos enviats (PTO): <strong class="mono" id="pulses-sent">0</strong></span>
+          </div>
+
+          <div class="rail-container">
+            <div class="screw-bar">
+              <div class="limit-marker" style="left:0%; color:#fca5a5;">FC_HW_Inf (0mm)</div>
+              <div class="limit-marker" style="left:10%; color:#86efac;">▼ FC_Home (50mm)</div>
+              <div class="limit-marker" style="left:50%; color:#94a3b8;">250mm</div>
+              <div class="limit-marker" style="left:100%; color:#fca5a5;">FC_HW_Sup (500mm)</div>
+              <div class="carriage" id="axis-carriage" style="left:0%;">
+                <span>EIX 1</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Blocs PLCopen -->
+        <div class="plcopen-grid">
+          <!-- MC_Power -->
+          <div class="mc-block">
+            <div class="mc-head">MC_Power (Habilitar)</div>
+            <div class="mc-body">
+              <div>Axis: <strong>"Eje_1"</strong></div>
+              <button class="btn primary" id="btn-power" onclick="toggleMcPower()">Enable := TRUE</button>
+              <div id="st-power" style="font-size:0.75rem; color:#475569;">Status: FALSE (Sense parell)</div>
+            </div>
+          </div>
+
+          <!-- MC_Home -->
+          <div class="mc-block">
+            <div class="mc-head">MC_Home (Zero Màquina)</div>
+            <div class="mc-body">
+              <label>Mode:
+                <select id="home-mode" style="width:100%; margin-top:2px;">
+                  <option value="3">Mode 3: Actiu (Cerca sensor 50mm)</option>
+                  <option value="0">Mode 0: Directe (Zero aquí = 0.0)</option>
+                </select>
+              </label>
+              <button class="btn" onclick="execMcHome()">Execute (Flanc 0→1)</button>
+            </div>
+          </div>
+
+          <!-- MC_MoveAbsolute -->
+          <div class="mc-block">
+            <div class="mc-head">MC_MoveAbsolute</div>
+            <div class="mc-body">
+              <div>Position (mm): <input type="number" id="abs-pos" value="250" min="0" max="500" style="width:70px;"></div>
+              <div>Velocity (mm/s): <input type="number" id="abs-vel" value="80" min="10" max="200" style="width:70px;"></div>
+              <button class="btn" onclick="execMcAbsolute()">Execute (Cota exacta)</button>
+            </div>
+          </div>
+
+          <!-- MC_MoveRelative -->
+          <div class="mc-block">
+            <div class="mc-head">MC_MoveRelative</div>
+            <div class="mc-body">
+              <div>Distance (mm): <input type="number" id="rel-dist" value="50" min="-400" max="400" style="width:70px;"></div>
+              <div>Velocity (mm/s): <input type="number" id="rel-vel" value="60" min="10" max="200" style="width:70px;"></div>
+              <button class="btn" onclick="execMcRelative()">Execute (Avanç relatiu)</button>
+            </div>
+          </div>
+
+          <!-- MC_MoveJog & Halt & Reset -->
+          <div class="mc-block">
+            <div class="mc-head">MC_MoveJog / Halt / Reset</div>
+            <div class="mc-body">
+              <div style="display:flex; gap:0.35rem;">
+                <button class="btn" style="flex:1;" onmousedown="startJog(-1)" onmouseup="stopJog()" onmouseleave="stopJog()">◀ Jog -</button>
+                <button class="btn" style="flex:1;" onmousedown="startJog(1)" onmouseup="stopJog()" onmouseleave="stopJog()">Jog + ▶</button>
+              </div>
+              <div style="display:flex; gap:0.35rem;">
+                <button class="btn warn" style="flex:1;" onclick="execMcHalt()">MC_Halt</button>
+                <button class="btn danger" style="flex:1;" onclick="execMcReset()">MC_Reset</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="log-box" id="mc-log" style="margin-top:0.85rem;">
+          <div>[TO Eje_1] Sistema llest. Recorda activar MC_Power abans de moure l'eix.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 2: TREN DE POLSOS (PTO) I DRIVER TB6600                    -->
+    <!-- =================================================================== -->
+    <section id="t-pto" class="tab-content">
+      <div class="grid-2">
+        <div class="card">
+          <h3>Modes de Senyal PTO de la Signal Board (fins a 200 kHz)</h3>
+          <p style="font-size:0.85rem; color:var(--muted); margin-bottom:0.75rem;">
+            Les sortides a relè no serveixen per a Motion Control. Cal usar sortides a transistor o una <strong>Signal Board (SB 1222 DC 200 kHz a 5V o 24V)</strong> amb resistències limitadores d'1 kΩ cap al driver TB6600.
+          </p>
+
+          <div class="field-row">
+            <label>Tipus de senyal PTO:</label>
+            <select id="pto-mode" onchange="drawPtoWaves()">
+              <option value="pd" selected>1. Impuls (P0) i Sentit (P1) — Més habitual (PUL/DIR)</option>
+              <option value="ud">2. Impuls ascendent A (P0) i descendent B (P1)</option>
+              <option value="ab">3. Quadratura A/B amb desplaçament de fase (90°)</option>
+            </select>
+
+            <label>Sentit de gir:</label>
+            <select id="pto-dir" onchange="drawPtoWaves()">
+              <option value="1">Gir Positiu (Horari / +)</option>
+              <option value="-1">Gir Negatiu (Antihorari / -)</option>
+            </select>
+          </div>
+
+          <canvas id="pto-canvas" class="scope" width="540" height="170"></canvas>
+          <div id="pto-desc" style="font-size:0.83rem; color:#e2e8f0; margin-top:0.65rem;"></div>
+        </div>
+
+        <div class="card">
+          <h3>Configurador Físic del Driver TB6600 (DIP Switches S1–S6)</h3>
+          <p style="font-size:0.85rem; color:var(--muted); margin-bottom:0.5rem;">
+            Fes clic sobre els interruptors <strong>S1, S2, S3</strong> (Microstepping) i <strong>S4, S5, S6</strong> (Limitació de corrent) per veure la configuració real del driver TB6600:
+          </p>
+
+          <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:center;">
+            <div>
+              <div style="font-size:0.78rem; color:#7dd3fc; font-weight:700;">S1–S3: Microstepping | S4–S6: Corrent</div>
+              <div class="dip-bank" id="dip-bank"></div>
+            </div>
+
+            <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:0.85rem; flex:1; min-width:210px;">
+              <div style="font-size:0.82rem; color:var(--muted);">Configuració llegida:</div>
+              <div style="font-size:0.95rem; font-weight:700; color:#5eead4; margin-top:0.25rem;" id="dip-step-res">Microstep: 1 (200 polsos/volta)</div>
+              <div style="font-size:0.82rem; color:#cbd5e1;" id="dip-angle-res">Resolució angular: 1.80° / pols</div>
+              <div style="font-size:0.95rem; font-weight:700; color:#fde68a; margin-top:0.45rem;" id="dip-curr-res">Corrent nominal: 1.5 A (Pic 1.7 A)</div>
+            </div>
+          </div>
+
+          <div style="margin-top:0.9rem; font-size:0.82rem; color:var(--muted); background:var(--bg); padding:0.7rem; border-radius:8px;">
+            <strong>Borns del TB6600:</strong> <code>PUL+/PUL-</code> (tren de polsos), <code>DIR+/DIR-</code> (sentit de gir), <code>ENA+/ENA-</code> (habilitació; si està desactivat l'eix queda lliure manualment), <code>A+/A-</code> i <code>B+/B-</code> (bobines motor PaP bipolar), <code>VCC/GND</code> (9–42 VDC amb condensador electrolític de 100 µF 50V).
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 3: COMMAND TABLE I PERFILS DE VELOCITAT (TRAPEZI VS S)     -->
+    <!-- =================================================================== -->
+    <section id="t-cmd" class="tab-content">
+      <div class="grid-2">
+        <div class="card">
+          <h3>
+            <span><code>TO_CommandTable</code> (Seqüència d'Ordres)</span>
+            <button class="btn primary" onclick="runCommandTable()">▶ Executar Taula</button>
+          </h3>
+          <p style="font-size:0.84rem; color:var(--muted); margin-bottom:0.7rem;">
+            Permet encadenar moviments absoluts, relatius i esperes (<code>Wait</code>) en una taula sense programar desenes de blocs <code>MC_Move</code>.
+          </p>
+
+          <table class="cmd-table" id="cmd-table-el">
+            <thead>
+              <tr><th>Pas</th><th>Tipus d'ordre</th><th>Posició / Distància</th><th>Velocitat</th><th>Espera</th></tr>
+            </thead>
+            <tbody>
+              <tr id="cmd-row-0"><td>1</td><td>Positioning Absolute</td><td>20.0 mm</td><td>30.0 mm/s</td><td>—</td></tr>
+              <tr id="cmd-row-1"><td>2</td><td>Wait</td><td>—</td><td>—</td><td>1.5 s</td></tr>
+              <tr id="cmd-row-2"><td>3</td><td>Positioning Absolute</td><td>100.0 mm</td><td>15.0 mm/s</td><td>—</td></tr>
+              <tr id="cmd-row-3"><td>4</td><td>Positioning Relative</td><td>-30.0 mm</td><td>25.0 mm/s</td><td>—</td></tr>
+              <tr id="cmd-row-4"><td>5</td><td>Positioning Absolute</td><td>50.0 mm</td><td>20.0 mm/s</td><td>—</td></tr>
+            </tbody>
+          </table>
+          <div id="cmd-status" style="font-size:0.85rem; color:#5eead4; font-weight:600;">Estat: Llest per iniciar seqüència.</div>
+        </div>
+
+        <div class="card">
+          <h3>Perfil Trapezoïdal vs. Limitació de Estrebades (Jerk / Corba en "S")</h3>
+          <p style="font-size:0.84rem; color:var(--muted); margin-bottom:0.75rem;">
+            Activar la <strong>limitació de tirons (Jerk)</strong> arrodoneix les cantonades de l'acceleració i desacceleració per eliminar vibracions mecàniques i evitar que les peces caiguin per inèrcia.
+          </p>
+          <div class="field-row">
+            <label><input type="checkbox" id="jerk-toggle" checked onchange="drawJerkProfile()"> Activar Limitació de Tirons (Perfil en S)</label>
+          </div>
+          <canvas id="jerk-canvas" class="scope" width="520" height="170"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 4: CALCULADORA MECÀNICA PER A L'OBJECTE TECNOLÒGIC         -->
+    <!-- =================================================================== -->
+    <section id="t-calc" class="tab-content">
+      <div class="card">
+        <h3>Calculadora de Paràmetres Mecànics i Freqüència PTO per al TO</h3>
+        <p style="font-size:0.85rem; color:var(--muted); margin-bottom:1rem;">
+          Calcula automàticament els valors exactes que has d'introduir a l'apartat <strong>Mecànica</strong> i <strong>Dinàmica</strong> del <code>TO_PositioningAxis</code> a TIA Portal i comprova que no superes els <strong>200 kHz</strong> de la Signal Board.
+        </p>
+
+        <div class="grid-2">
+          <div>
+            <div class="field-row">
+              <label>Passos natius del motor PaP / volta:</label>
+              <select id="calc-native" onchange="calcMotionParams()">
+                <option value="200" selected>200 passos (1.8° / pas)</option>
+                <option value="400">400 passos (0.9° / pas)</option>
+                <option value="24">24 passos (15° / pas - ex. PDF)</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label>Microstepping configurat al driver:</label>
+              <select id="calc-micro" onchange="calcMotionParams()">
+                <option value="1">1 (Pas complet)</option>
+                <option value="2">1/2 (Mig pas)</option>
+                <option value="4">1/4</option>
+                <option value="8" selected>1/8</option>
+                <option value="16">1/16</option>
+                <option value="32">1/32</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label>Pas de rosca del fusell (mm/volta):</label>
+              <input type="number" id="calc-pitch" value="5" min="0.5" max="100" step="0.5" onchange="calcMotionParams()">
+            </div>
+            <div class="field-row">
+              <label>Relació reductora (Motor : Carga):</label>
+              <input type="number" id="calc-gear" value="1" min="0.1" max="100" step="0.5" onchange="calcMotionParams()">
+            </div>
+            <div class="field-row">
+              <label>Velocitat màxima desitjada (mm/s):</label>
+              <input type="number" id="calc-vel" value="150" min="1" max="2000" onchange="calcMotionParams()">
+            </div>
+          </div>
+
+          <div style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:1.1rem;">
+            <h4 style="color:#5eead4; margin-bottom:0.75rem;">Resultats per introduir al TIA Portal:</h4>
+            <div style="margin-bottom:0.6rem;">• <strong>Impulsos per volta del motor:</strong> <span class="mono" style="color:#fde68a; font-size:1.05rem;" id="res-ppr">1600 polsos/volta</span></div>
+            <div style="margin-bottom:0.6rem;">• <strong>Desplaçament de càrrega per volta:</strong> <span class="mono" style="color:#fde68a; font-size:1.05rem;" id="res-mmrev">5.00 mm/volta</span></div>
+            <div style="margin-bottom:0.6rem;">• <strong>Resolució lineal de l'eix:</strong> <span class="mono" style="color:#7dd3fc;" id="res-lin">0.0031 mm/pols</span></div>
+            <div style="margin-bottom:0.6rem;">• <strong>Freqüència PTO necessària:</strong> <span class="mono" style="color:#86efac; font-size:1.05rem;" id="res-freq">48,000 Hz (48.0 kHz)</span></div>
+            <div id="res-sb-check" style="margin-top:0.8rem; padding:0.6rem; border-radius:6px; background:rgba(34,197,94,0.15); border:1px solid #22c55e; color:#86efac; font-size:0.85rem; font-weight:700;">
+              ✅ Compatible amb Signal Board SB 1222 (Màxim 200 kHz).
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 5: TEST D'AUTOAVALUACIÓ                                    -->
+    <!-- =================================================================== -->
+    <section id="t-quiz" class="tab-content">
+      <div class="card">
+        <h3>Test d'Autoavaluació: Motion Control i Motors Pas a Pas</h3>
+        <div id="quiz-container"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function openTab(id, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('nav.tabs button').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      btn.classList.add('active');
+      if (id === 't-pto') drawPtoWaves();
+      if (id === 't-cmd') drawJerkProfile();
+    }
+
+    function toggleGuide(id) {
+      document.getElementById(id).classList.toggle('collapsed');
+    }
+
+    // --- PESTANYA 1: SIMULADOR TO_PositioningAxis ---
+    let powered = false;
+    let homed = false;
+    let axisError = false;
+    let posPlc = 0.0;
+    let posReal = 0.0;
+    let velCurr = 0.0;
+    let pulsesSent = 0;
+    let moveInterval = null;
+
+    function logMc(msg, color = '#cbd5e1') {
+      const box = document.getElementById('mc-log');
+      const d = document.createElement('div');
+      d.style.color = color;
+      d.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      box.prepend(d);
+    }
+
+    function updateAxisUi() {
+      document.getElementById('led-power').className = 'dot' + (powered ? ' on-green' : '');
+      document.getElementById('led-homed').className = 'dot' + (homed ? ' on-blue' : '');
+      document.getElementById('led-busy').className = 'dot' + (velCurr !== 0 ? ' on-blue' : '');
+      document.getElementById('led-error').className = 'dot' + (axisError ? ' on-red' : '');
+
+      document.getElementById('pos-plc').textContent = posPlc.toFixed(1) + ' mm';
+      document.getElementById('pos-real').textContent = posReal.toFixed(1) + ' mm';
+      document.getElementById('vel-curr').textContent = velCurr.toFixed(1) + ' mm/s';
+      document.getElementById('pulses-sent').textContent = Math.round(pulsesSent);
+
+      const pct = Math.max(0, Math.min(100, (posReal / 500) * 100));
+      document.getElementById('axis-carriage').style.left = pct + '%';
+    }
+
+    function toggleMcPower() {
+      powered = !powered;
+      const btn = document.getElementById('btn-power');
+      const st = document.getElementById('st-power');
+      if (powered) {
+        btn.textContent = 'Enable := FALSE';
+        btn.classList.add('active-btn');
+        st.textContent = 'Status: TRUE (Motor bloquejat / Ready)';
+        st.style.color = '#15803d';
+        logMc('✅ MC_Power: Eix habilitat i en tensió.', '#86efac');
+      } else {
+        stopMotion();
+        homed = false;
+        btn.textContent = 'Enable := TRUE';
+        btn.classList.remove('active-btn');
+        st.textContent = 'Status: FALSE (Sense parell)';
+        st.style.color = '#475569';
+        logMc('⏹ MC_Power: Eix deshabilitat (perdut estat Homed).', '#94a3b8');
+      }
+      updateAxisUi();
+    }
+
+    function stopMotion() {
+      if (moveInterval) clearInterval(moveInterval);
+      moveInterval = null;
+      velCurr = 0;
+      updateAxisUi();
+    }
+
+    function moveToTarget(targetPos, speed, onDone) {
+      if (!powered) {
+        logMc('❌ Error: No es pot moure l'eix amb MC_Power = FALSE!', '#fca5a5');
+        return;
+      }
+      if (axisError) {
+        logMc('❌ Error actiu a l'eix. Executa MC_Reset primer!', '#fca5a5');
+        return;
+      }
+      stopMotion();
+      const dt = 0.05; // 50 ms
+      moveInterval = setInterval(() => {
+        const diff = targetPos - posPlc;
+        if (Math.abs(diff) <= speed * dt) {
+          const step = diff;
+          posPlc += step;
+          posReal += step;
+          pulsesSent += Math.abs(step) * 320; // 1600 polsos / 5mm = 320 polsos/mm
+          stopMotion();
+          if (onDone) onDone();
+          return;
+        }
+        const dir = diff > 0 ? 1 : -1;
+        velCurr = dir * speed;
+        const delta = velCurr * dt;
+        posPlc += delta;
+        posReal += delta;
+        pulsesSent += Math.abs(delta) * 320;
+
+        if (posReal <= 0 || posReal >= 500) {
+          posReal = Math.max(0, Math.min(500, posReal));
+          posPlc = posReal;
+          triggerLimitError();
+          return;
+        }
+        updateAxisUi();
+      }, 50);
+    }
+
+    function execMcHome() {
+      if (!powered) {
+        logMc('❌ Error: Activa MC_Power abans de fer MC_Home.', '#fca5a5');
+        return;
+      }
+      const mode = document.getElementById('home-mode').value;
+      if (mode === '0') {
+        posPlc = 0.0;
+        homed = true;
+        logMc('📍 MC_Home (Mode 0 Directe): Zero màquina establert a la posició actual (Posició TO = 0.0 mm).', '#7dd3fc');
+        updateAxisUi();
+      } else {
+        logMc('🔍 MC_Home (Mode 3 Actiu): Buscant sensor físic FC_Home a 50 mm...', '#7dd3fc');
+        moveToTarget(50.0, 40.0, () => {
+          posPlc = 0.0;
+          homed = true;
+          logMc('✅ MC_Home completat: Sensor detectat! Posició TO posada a 0.0 mm (Homed = TRUE).', '#86efac');
+          updateAxisUi();
+        });
+      }
+    }
+
+    function execMcAbsolute() {
+      if (!homed) {
+        logMc('⚠️ Avís: MC_MoveAbsolute requereix referenciar l'eix primer amb MC_Home!', '#fde68a');
+        return;
+      }
+      const target = parseFloat(document.getElementById('abs-pos').value);
+      const vel = parseFloat(document.getElementById('abs-vel').value);
+      logMc(`▶ MC_MoveAbsolute cap a cota ${target} mm a ${vel} mm/s...`, '#e2e8f0');
+      moveToTarget(target, vel, () => logMc(`✅ MC_MoveAbsolute Done: Assolida posició ${posPlc.toFixed(1)} mm.`, '#86efac'));
+    }
+
+    function execMcRelative() {
+      const dist = parseFloat(document.getElementById('rel-dist').value);
+      const vel = parseFloat(document.getElementById('rel-vel').value);
+      const target = posPlc + dist;
+      logMc(`▶ MC_MoveRelative (${dist >= 0 ? '+' : ''}${dist} mm) a ${vel} mm/s...`, '#e2e8f0');
+      moveToTarget(target, vel, () => logMc(`✅ MC_MoveRelative Done: Nova posició ${posPlc.toFixed(1)} mm.`, '#86efac'));
+    }
+
+    function startJog(dir) {
+      if (!powered || axisError) {
+        logMc('❌ No es pot fer Jog (comprova MC_Power i Errors).', '#fca5a5');
+        return;
+      }
+      stopMotion();
+      moveInterval = setInterval(() => {
+        velCurr = dir * 35;
+        posPlc += velCurr * 0.05;
+        posReal += velCurr * 0.05;
+        pulsesSent += Math.abs(velCurr * 0.05) * 320;
+        if (posReal <= 0 || posReal >= 500) {
+          posReal = Math.max(0, Math.min(500, posReal));
+          posPlc = posReal;
+          triggerLimitError();
+        }
+        updateAxisUi();
+      }, 50);
+    }
+
+    function stopJog() {
+      if (velCurr !== 0) {
+        stopMotion();
+        logMc('⏹ MC_MoveJog aturat.', '#94a3b8');
+      }
+    }
+
+    function execMcHalt() {
+      stopMotion();
+      logMc('⏸ MC_Halt executat: Moviment aturat de forma controlada mantenint l'eix habilitat.', '#fde68a');
+    }
+
+    function triggerLimitError() {
+      stopMotion();
+      axisError = true;
+      updateAxisUi();
+      logMc('🚨 ERROR D'EIX: S'ha assolit un Final de Carrera de Seguretat! Cal executar MC_Reset.', '#fca5a5');
+    }
+
+    function execMcReset() {
+      axisError = false;
+      if (posReal <= 0) { posReal = 5; posPlc = 5; }
+      if (posReal >= 500) { posReal = 495; posPlc = 495; }
+      updateAxisUi();
+      logMc('🔄 MC_Reset Done: Alarmes esborrades. L'eix torna a estar operatiu.', '#86efac');
+    }
+
+    function simulateStepLoss() {
+      posReal = Math.max(0, posReal - 25);
+      updateAxisUi();
+      logMc('⚠️ PÈRDUA DE PASSES (Llaç Obert): Sobrecàrrega mecànica! El PLC creu que és a ' + posPlc.toFixed(1) + ' mm, però el carro real és a ' + posReal.toFixed(1) + ' mm (sense encoder no ho detecta).', '#fde68a');
+    }
+
+    // --- PESTANYA 2: ONES PTO I DIP SWITCHES TB6600 ---
+    function drawPtoWaves() {
+      const canvas = document.getElementById('pto-canvas');
+      const ctx = canvas.getContext('2d');
+      const mode = document.getElementById('pto-mode').value;
+      const dir = parseInt(document.getElementById('pto-dir').value, 10);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.lineWidth = 2.5;
+
+      // Etiquetes canals
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 12px Consolas';
+      ctx.fillText('P0 (Sortida A)', 10, 25);
+      ctx.fillStyle = '#a855f7';
+      ctx.fillText('P1 (Sortida B)', 10, 105);
+
+      const startX = 115;
+      const endX = 520;
+      const stepW = 28;
+
+      // Canal P0
+      ctx.strokeStyle = '#38bdf8';
+      ctx.beginPath();
+      for (let x = startX; x < endX; x += stepW) {
+        if (mode === 'ud' && dir === -1) {
+          ctx.moveTo(x, 65); ctx.lineTo(x + stepW, 65);
+        } else {
+          ctx.moveTo(x, 65); ctx.lineTo(x, 25);
+          ctx.lineTo(x + stepW / 2, 25); ctx.lineTo(x + stepW / 2, 65);
+          ctx.lineTo(x + stepW, 65);
+        }
+      }
+      ctx.stroke();
+
+      // Canal P1
+      ctx.strokeStyle = '#a855f7';
+      ctx.beginPath();
+      if (mode === 'pd') {
+        const yLevel = dir === 1 ? 105 : 145;
+        ctx.moveTo(startX, yLevel);
+        ctx.lineTo(endX, yLevel);
+        document.getElementById('pto-desc').textContent =
+          `Mode Impuls i Sentit (P/D): P0 (PUL) envia el tren de polsos i P1 (DIR) es manté fixa a ${dir === 1 ? '1 lògic (Gir Positiu)' : '0 lògic (Gir Negatiu)'}.`;
+      } else if (mode === 'ud') {
+        for (let x = startX; x < endX; x += stepW) {
+          if (dir === 1) {
+            ctx.moveTo(x, 145); ctx.lineTo(x + stepW, 145);
+          } else {
+            ctx.moveTo(x, 145); ctx.lineTo(x, 105);
+            ctx.lineTo(x + stepW / 2, 105); ctx.lineTo(x + stepW / 2, 145);
+            ctx.lineTo(x + stepW, 145);
+          }
+        }
+        document.getElementById('pto-desc').textContent =
+          `Mode Impuls Ascendent/Descendent: P0 només polsa per girar a la dreta (CW) i P1 només polsa per girar a l'esquerra (CCW).`;
+      } else {
+        const shift = dir === 1 ? stepW / 4 : -stepW / 4;
+        for (let x = startX; x < endX; x += stepW) {
+          const sx = x + shift;
+          ctx.moveTo(sx, 145); ctx.lineTo(sx, 105);
+          ctx.lineTo(sx + stepW / 2, 105); ctx.lineTo(sx + stepW / 2, 145);
+          ctx.lineTo(sx + stepW, 145);
+        }
+        document.getElementById('pto-desc').textContent =
+          `Mode Quadratura A/B (90°): Dues ones desfasades un quart de període. ${dir === 1 ? 'P0 va 90° avançada respecte P1 (Moviment positiu).' : 'P0 va 90° endarrerida respecte P1 (Moviment negatiu).'}`;
+      }
+      ctx.stroke();
+    }
+
+    // DIP Switches TB6600 (true = ON/amunt, false = OFF/avall)
+    const dipState = [true, true, false, true, true, false]; // S1..S3 = 1/1 (200), S4..S6 = 1.5A
+
+    function renderDipSwitches() {
+      const bank = document.getElementById('dip-bank');
+      bank.innerHTML = '';
+      dipState.forEach((isOn, idx) => {
+        const sw = document.createElement('div');
+        sw.className = 'dip-sw';
+        sw.onclick = () => {
+          dipState[idx] = !dipState[idx];
+          renderDipSwitches();
+        };
+        sw.innerHTML = `
+          <div class="dip-label">${isOn ? 'ON' : 'OFF'}</div>
+          <div class="dip-slot ${isOn ? 'on' : ''}"><div class="dip-nub"></div></div>
+          <div class="dip-label">S${idx + 1}</div>
+        `;
+        bank.appendChild(sw);
+      });
+
+      // Taula S1-S3 segons serigrafia TB6600 del PDF
+      const k1 = `${dipState[0] ? 1 : 0}${dipState[1] ? 1 : 0}${dipState[2] ? 1 : 0}`;
+      const stepMap = {
+        '111': ['NC (Sense sortida)', 0],
+        '110': ['1 (Pas complet)', 200],
+        '101': ['1/2 A (Mig pas)', 400],
+        '011': ['1/2 B (Mig pas)', 400],
+        '100': ['1/4 de pas', 800],
+        '010': ['1/8 de pas', 1600],
+        '001': ['1/16 de pas', 3200],
+        '000': ['1/32 de pas', 6400]
+      };
+      const [mLabel, ppr] = stepMap[k1];
+      document.getElementById('dip-step-res').textContent = `Microstep: ${mLabel} (${ppr} polsos/volta)`;
+      document.getElementById('dip-angle-res').textContent = ppr > 0 ? `Resolució angular: ${(360 / ppr).toFixed(3)}° / pols` : 'Driver desactivat (NC)';
+
+      // Taula S4-S6 segons serigrafia TB6600
+      const k2 = `${dipState[3] ? 1 : 0}${dipState[4] ? 1 : 0}${dipState[5] ? 1 : 0}`;
+      const currMap = {
+        '111': '0.5 A (Pic 0.7 A)',
+        '101': '1.0 A (Pic 1.2 A)',
+        '110': '1.5 A (Pic 1.7 A)',
+        '100': '2.0 A (Pic 2.2 A)',
+        '011': '2.5 A (Pic 2.7 A)',
+        '001': '2.8 A (Pic 2.9 A)',
+        '010': '3.0 A (Pic 3.2 A)',
+        '000': '3.5 A (Pic 4.0 A)'
+      };
+      document.getElementById('dip-curr-res').textContent = `Corrent nominal: ${currMap[k2]}`;
+    }
+
+    // --- PESTANYA 3: COMMAND TABLE I PERFIL EN S ---
+    function runCommandTable() {
+      const steps = [
+        'Pas 1: Positioning Absolute → 20.0 mm a 30.0 mm/s',
+        'Pas 2: Wait → Esperant 1.5 segons...',
+        'Pas 3: Positioning Absolute → 100.0 mm a 15.0 mm/s',
+        'Pas 4: Positioning Relative → -30.0 mm (destí 70.0 mm) a 25.0 mm/s',
+        'Pas 5: Positioning Absolute → 50.0 mm a 20.0 mm/s'
+      ];
+      let i = 0;
+      const st = document.getElementById('cmd-status');
+      const timer = setInterval(() => {
+        document.querySelectorAll('#cmd-table-el tbody tr').forEach(r => r.classList.remove('active-step'));
+        if (i >= steps.length) {
+          clearInterval(timer);
+          st.textContent = '✅ Command Table finalitzada amb èxit (Posició final: 50.0 mm).';
+          return;
+        }
+        document.getElementById(`cmd-row-${i}`).classList.add('active-step');
+        st.textContent = '▶ Executant ' + steps[i];
+        i++;
+      }, 950);
+    }
+
+    function drawJerkProfile() {
+      const canvas = document.getElementById('jerk-canvas');
+      const ctx = canvas.getContext('2d');
+      const isS = document.getElementById('jerk-toggle').checked;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Eixos
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(40, 20); ctx.lineTo(40, 145); ctx.lineTo(490, 145);
+      ctx.stroke();
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px Consolas';
+      ctx.fillText('V (mm/s)', 10, 15);
+      ctx.fillText('Temps (t)', 430, 162);
+
+      ctx.strokeStyle = isS ? '#22c55e' : '#38bdf8';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(40, 145);
+
+      if (!isS) {
+        // Perfil trapezoïdal recte
+        ctx.lineTo(140, 40);
+        ctx.lineTo(350, 40);
+        ctx.lineTo(450, 145);
+      } else {
+        // Perfil en S amb limitació de tirons
+        ctx.bezierCurveTo(95, 145, 95, 40, 155, 40);
+        ctx.lineTo(335, 40);
+        ctx.bezierCurveTo(395, 40, 395, 145, 450, 145);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = isS ? '#86efac' : '#7dd3fc';
+      ctx.font = 'bold 12px Segoe UI';
+      ctx.fillText(
+        isS ? 'Perfil en "S" (Jerk limitat): Arrencada i frenada suaus sense vibracions' : 'Perfil Trapezoïdal clàssic: Canvis bruscos d'acceleració (tirones)',
+        60, 24
+      );
+    }
+
+    // --- PESTANYA 4: CALCULADORA MECÀNICA ---
+    function calcMotionParams() {
+      const nativeSteps = parseFloat(document.getElementById('calc-native').value);
+      const micro = parseFloat(document.getElementById('calc-micro').value);
+      const pitch = parseFloat(document.getElementById('calc-pitch').value) || 5;
+      const gear = parseFloat(document.getElementById('calc-gear').value) || 1;
+      const vel = parseFloat(document.getElementById('calc-vel').value) || 100;
+
+      const ppr = nativeSteps * micro;
+      const mmPerRev = pitch / gear;
+      const mmPerPulse = mmPerRev / ppr;
+      const freqHz = vel / mmPerPulse;
+
+      document.getElementById('res-ppr').textContent = `${ppr} polsos/volta`;
+      document.getElementById('res-mmrev').textContent = `${mmPerRev.toFixed(2)} mm/volta`;
+      document.getElementById('res-lin').textContent = `${mmPerPulse.toFixed(4)} mm/pols`;
+      document.getElementById('res-freq').textContent = `${Math.round(freqHz).toLocaleString()} Hz (${(freqHz / 1000).toFixed(2)} kHz)`;
+
+      const chk = document.getElementById('res-sb-check');
+      if (freqHz <= 200000) {
+        chk.style.background = 'rgba(34,197,94,0.15)';
+        chk.style.borderColor = '#22c55e';
+        chk.style.color = '#86efac';
+        chk.textContent = '✅ Compatible amb Signal Board SB 1222 (Màxim 200 kHz).';
+      } else {
+        chk.style.background = 'rgba(239,68,68,0.15)';
+        chk.style.borderColor = '#ef4444';
+        chk.style.color = '#fca5a5';
+        chk.textContent = '🚨 ATENCIÓ: Supera els 200 kHz màxims de la Signal Board! Redueix el microstepping o la velocitat.';
+      }
+    }
+
+    // --- PESTANYA 5: QUIZ ---
+    const quizData = [
+      {
+        q: "1. Per què necessitem instal·lar una Signal Board (SB) de sortides digitals DC a una CPU S7-1214C AC/DC/RLY per controlar un motor pas a pas?",
+        opts: [
+          "Perquè les sortides de relè de la CPU són massa lentes i no suporten trens de polsos (PTO) d'alta freqüència (fins a 200 kHz).",
+          "Perquè la CPU no té memòria per guardar blocs de dades (DB).",
+          "Perquè els motors pas a pas funcionen amb corrent altern trifàsic a 400 V."
+        ],
+        ans: 0,
+        exp: "Correcte! Els relés mecànics no poden commutar a desenes de kHz; calen sortides a transistor com la SB 1222 DC (200 kHz)."
+      },
+      {
+        q: "2. Quina diferència hi ha entre MC_MoveAbsolute i MC_MoveRelative respecte al referenciat (MC_Home)?",
+        opts: [
+          "Cap diferència, tots dos necessiten fer MC_Home obligatòriament.",
+          "MC_MoveAbsolute requereix que l'eix estigui referenciat (Homed) perquè va a una cota referida al Zero Màquina; MC_MoveRelative avança des de la posició actual i no requereix Homing.",
+          "MC_MoveRelative només funciona en mode Jog."
+        ],
+        ans: 1,
+        exp: "Exacte! MC_MoveAbsolute treballa sobre coordenades absolutes respecte al Zero Màquina establert per MC_Home."
+      },
+      {
+        q: "3. Quin és el principal inconvenient del control en llaç obert (Open Loop) típic dels motors pas a pas?",
+        opts: [
+          "No tenen parell quan estan aturats.",
+          "Si hi ha una sobrecàrrega mecànica i el motor perd passes, el PLC no ho detecta perquè no hi ha encoder de realimentació.",
+          "Necessiten un cable PROFINET IRT obligatòriament."
+        ],
+        ans: 1,
+        exp: "Molt bé! En llaç obert el PLC assumeix que cada pols enviat equival a un pas executat; si perd passes, es desquadra la posició."
+      }
+    ];
+
+    function renderQuiz() {
+      const c = document.getElementById('quiz-container');
+      quizData.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:9px; padding:1rem; margin-bottom:0.85rem;';
+        div.innerHTML = `<div style="font-weight:700; margin-bottom:0.55rem;">${item.q}</div>`;
+        item.opts.forEach((o, oi) => {
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.style.cssText = 'display:block; width:100%; text-align:left; margin-bottom:0.4rem;';
+          btn.textContent = o;
+          btn.onclick = () => {
+            const fb = document.getElementById(`q-fb-${idx}`);
+            if (oi === item.ans) {
+              fb.style.color = '#86efac';
+              fb.textContent = '✅ ' + item.exp;
+            } else {
+              fb.style.color = '#fca5a5';
+              fb.textContent = '❌ Torna-ho a intentar!';
+            }
+          };
+          div.appendChild(btn);
+        });
+        const fb = document.createElement('div');
+        fb.id = `q-fb-${idx}`;
+        fb.style.cssText = 'font-size:0.85rem; margin-top:0.4rem; font-weight:600;';
+        div.appendChild(fb);
+        c.appendChild(div);
+      });
+    }
+
+    updateAxisUi();
+    drawPtoWaves();
+    renderDipSwitches();
+    drawJerkProfile();
+    calcMotionParams();
+    renderQuiz();
+  </script>
+</body>
+</html>
