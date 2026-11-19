@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador Rellotge Intern (RTC) i Alarmes Cícliques/Horàries — S7-1200</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-alt: #263349;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --siemens: #009999;
+      --siemens-dark: #007373;
+      --ob30-col: #3b82f6;
+      --ob10-col: #a855f7;
+      --ob80-col: #ef4444;
+      --dtl-col: #f59e0b;
+      --ok: #22c55e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      padding-bottom: 3rem;
+    }
+
+    header {
+      background: linear-gradient(135deg, #091e2c 0%, #0f172a 100%);
+      border-bottom: 2px solid var(--siemens);
+      padding: 1.25rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+    }
+
+    .badge {
+      background: var(--siemens);
+      color: #fff;
+      font-weight: 700;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    h1 { font-size: 1.25rem; font-weight: 700; }
+    .subtitle { font-size: 0.85rem; color: var(--muted); }
+
+    nav.tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    nav.tabs button {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.55rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88rem;
+      transition: all 0.2s;
+    }
+
+    nav.tabs button:hover { color: var(--text); border-color: var(--siemens); }
+    nav.tabs button.active { background: var(--siemens); color: #fff; border-color: var(--siemens); }
+
+    main {
+      max-width: 1300px;
+      margin: 1.5rem auto;
+      padding: 0 1.25rem;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .guide-box {
+      background: rgba(0, 153, 153, 0.1);
+      border: 1px solid var(--siemens);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .guide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .guide-header h2 { font-size: 1rem; color: #5eead4; }
+    .guide-body { margin-top: 0.7rem; font-size: 0.9rem; color: #e2e8f0; }
+    .guide-body.collapsed { display: none; }
+    .guide-body ul { margin-left: 1.25rem; margin-top: 0.35rem; }
+    .guide-body li { margin-bottom: 0.25rem; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.85rem;
+      color: #f1f5f9;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.45rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover { border-color: #38bdf8; }
+    .btn.primary { background: var(--siemens); border-color: var(--siemens); color: #fff; }
+    .btn.primary:hover { background: var(--siemens-dark); }
+    .btn.warn { background: rgba(245, 158, 11, 0.2); border-color: var(--dtl-col); color: #fde68a; }
+    .btn.danger { background: rgba(239, 68, 68, 0.2); border-color: var(--ob80-col); color: #fca5a5; }
+
+    .mono { font-family: 'Consolas', 'Courier New', monospace; font-weight: 600; }
+
+    /* Pestanya 1: Rellotge RTC i DTL */
+    .clock-display {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .clock-box {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .clock-box.sys { border-color: #38bdf8; }
+    .clock-box.loc { border-color: var(--ok); }
+
+    .clock-title {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    .clock-val {
+      font-family: 'Consolas', monospace;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .dtl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+      gap: 0.55rem;
+      margin-top: 0.75rem;
+    }
+
+    .dtl-byte {
+      background: var(--bg);
+      border: 1px solid var(--dtl-col);
+      border-radius: 8px;
+      padding: 0.55rem;
+      text-align: center;
+    }
+
+    .dtl-byte .b-idx { font-size: 0.7rem; color: #fde68a; font-weight: 700; }
+    .dtl-byte .b-name { font-size: 0.82rem; font-weight: 700; color: #fff; }
+    .dtl-byte .b-type { font-size: 0.72rem; color: var(--muted); font-family: 'Consolas', monospace; }
+    .dtl-byte .b-val { font-size: 1rem; font-weight: 800; color: #5eead4; font-family: 'Consolas', monospace; margin-top: 0.2rem; }
+
+    .field-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .field-row label { font-size: 0.85rem; color: #7dd3fc; font-weight: 600; }
+    .field-row select, .field-row input {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    /* Pestanya 2: Instruccions TIA Portal */
+    .tia-block {
+      background: #e2e8f0;
+      color: #0f172a;
+      border: 2px solid #64748b;
+      border-radius: 8px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.82rem;
+      overflow: hidden;
+      margin-bottom: 0.9rem;
+    }
+
+    .tia-block-head {
+      background: #1d4ed8;
+      color: #fff;
+      text-align: center;
+      font-weight: 700;
+      padding: 0.3rem;
+    }
+
+    .tia-block-body {
+      padding: 0.65rem 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .pin-col { display: flex; flex-direction: column; gap: 0.35rem; }
+    .pin-col.right { text-align: right; }
+    .pin-tag { background: #cbd5e1; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; }
+
+    /* Pestanya 3: OB30, OB10 i OB80 */
+    .timeline-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .pulse-track {
+      display: flex;
+      gap: 4px;
+      height: 36px;
+      background: #091e2c;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px;
+      overflow: hidden;
+      margin: 0.6rem 0;
+    }
+
+    .tick-cell {
+      flex: 1;
+      background: #1e293b;
+      border-radius: 3px;
+      transition: background 0.1s;
+    }
+
+    .tick-cell.ob1 { background: #334155; }
+    .tick-cell.ob30 { background: var(--ob30-col); box-shadow: 0 0 8px var(--ob30-col); }
+    .tick-cell.ob80 { background: var(--ob80-col); box-shadow: 0 0 10px var(--ob80-col); }
+
+    .log-box {
+      background: #091e2c;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.8rem;
+      font-family: 'Consolas', monospace;
+      font-size: 0.82rem;
+      max-height: 210px;
+      overflow-y: auto;
+    }
+
+    .log-line {
+      padding: 0.25rem 0;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.45);
+    }
+
+    table.dt-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    table.dt-table th, table.dt-table td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.65rem;
+      text-align: left;
+    }
+
+    table.dt-table th { background: var(--bg); color: #7dd3fc; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="badge">MP 0965 · S7-1200</span>
+      <div>
+        <h1>Rellotge Intern (RTC), DTL i Alarmes Cícliques / Horàries</h1>
+        <div class="subtitle">Hora Sistema vs. Local, Estructura DTL (12 bytes), T_CONV, OB30, OB10 i OB80</div>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="active" onclick="openTab('t-rtc', this)">1. Rellotge RTC i Estructura DTL</button>
+      <button onclick="openTab('t-inst', this)">2. Instruccions (RD_LOC_T / T_CONV)</button>
+      <button onclick="openTab('t-obs', this)">3. OB30 (Cíclica), OB10 (Horària) i OB80</button>
+      <button onclick="openTab('t-quiz', this)">4. Test d'Autoavaluació</button>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 1: RELLOTGE RTC I ESTRUCTURA DTL (12 BYTES)                -->
+    <!-- =================================================================== -->
+    <section id="t-rtc" class="tab-content active">
+      <div class="guide-box">
+        <div class="guide-header" onclick="toggleGuide('g1')">
+          <h2>📘 Guia teòrica: Rellotge de Temps Real (RTC) i Estructura DTL (12 Bytes)</h2>
+          <span style="font-size:0.8rem; color:#5eead4;">Clic per desplegar/plegar</span>
+        </div>
+        <div id="g1" class="guide-body">
+          <ul>
+            <li><strong>Sense bateria:</strong> L'S7-1200 manté l'hora sense alimentació mitjançant un <strong>condensador d'alta capacitat</strong> durant un màxim de <strong>12 a 20 dies</strong>.</li>
+            <li><strong>Hora de Sistema (UTC) vs. Hora Local:</strong> L'hora de sistema és l'hora universal UTC fixa. L'hora local aplica la zona horària (ex. <code>UTC+01:00</code>) més el canvi d'horari d'estiu (+60 minuts entre l'últim diumenge de març i l'últim d'octubre).</li>
+            <li><strong>Estructura DTL (12 bytes):</strong> Guarda Any (<code>UInt</code>, 2B), Mes (<code>USInt</code>), Dia (<code>USInt</code>), Dia de la setmana (<code>USInt</code>: 1=Diumenge .. 7=Dissabte), Hora, Minut, Segon (<code>USInt</code>) i Nanosegons (<code>UDInt</code>, 4B).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span>Simulador del Rellotge Intern (RTC) del PLC S7-1200</span>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button class="btn primary" onclick="adoptPcTime()">🖥️ Adoptar hora PG/PC</button>
+            <button class="btn warn" onclick="simulatePowerLoss()">⚡ Simular tall de llum (Condensador)</button>
+          </div>
+        </h3>
+
+        <div class="field-row">
+          <label>Zona horària configurada:</label>
+          <select id="tz-select" onchange="updateRtcDisplay()">
+            <option value="0">UTC+00:00 (Londres / Meridà de Greenwich)</option>
+            <option value="1" selected>UTC+01:00 (Madrid, París, Amsterdam)</option>
+            <option value="2">UTC+02:00 (Atenes, Hèlsinki)</option>
+          </select>
+
+          <label style="margin-left:0.5rem;">
+            <input type="checkbox" id="dst-check" checked onchange="updateRtcDisplay()"> Activar horari d'estiu (+60 min)
+          </label>
+
+          <label style="margin-left:0.5rem;">Escriure hora manual (`WR_LOC_T`):</label>
+          <input type="datetime-local" id="manual-dt" onchange="setManualLocalTime()">
+        </div>
+
+        <div class="clock-display">
+          <div class="clock-box sys">
+            <div class="clock-title" style="color:#7dd3fc;">🌍 Hora de Sistema (`RD_SYS_T` · UTC Fixa)</div>
+            <div class="clock-val" id="sys-clock-str">DTL#2026-11-18-20:00:00.000</div>
+            <div style="font-size:0.8rem; color:var(--muted); margin-top:0.3rem;">Base universal del PLC independent de la zona horària.</div>
+          </div>
+
+          <div class="clock-box loc">
+            <div class="clock-title" style="color:#86efac;">📍 Hora Local (`RD_LOC_T` · Zona + Estiu)</div>
+            <div class="clock-val" id="loc-clock-str">DTL#2026-11-18-21:00:00.000</div>
+            <div style="font-size:0.8rem; color:var(--muted); margin-top:0.3rem;" id="tz-summary">Aplicat: UTC+01:00 (Sense horari d'estiu)</div>
+          </div>
+        </div>
+
+        <h4 style="font-size:0.9rem; color:#fde68a; margin-top:1rem;">Desglossament en memòria de la variable <code>"Rellotge"."Data i hora"</code> (Tipus DTL · 12 Bytes)</h4>
+        <div class="dtl-grid" id="dtl-bytes-grid"></div>
+      </div>
+
+      <div class="card">
+        <h3>Tipus de Dades de Data i Hora a TIA Portal</h3>
+        <table class="dt-table">
+          <thead>
+            <tr><th>Tipus</th><th>Mida</th><th>Emmagatzematge intern</th><th>Rang i exemple de constant</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="mono">Time</td><td>32 bits (DInt)</td><td>Mil·lisegons amb signe (usat als temporitzadors IEC)</td><td class="mono">T#-24d_20h... a T#24d_20h... (Ex: T#5m_30s)</td></tr>
+            <tr><td class="mono">Date</td><td>16 bits (UInt)</td><td>Dies transcorreguts des del patró <strong>01/01/1990</strong></td><td class="mono">D#1990-1-1 a D#2168-12-31 (Ex: D#2009-12-31)</td></tr>
+            <tr><td class="mono">TOD (Time_Of_Day)</td><td>32 bits (UDInt)</td><td>Mil·lisegons transcorreguts des de mitjanit (0 ms)</td><td class="mono">TOD#0:0:0.0 a TOD#23:59:59.999 (Ex: TOD#10:20:30.400)</td></tr>
+            <tr><td class="mono">DTL</td><td>12 bytes (Struct)</td><td>Any, Mes, Dia, Dia setmana, Hora, Minut, Segon, Nanosegon</td><td class="mono">DTL#1970-01-01-00:00:00.0 a DTL#2554-12-31...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 2: INSTRUCCIONS DE RELLOTGE I T_CONV                       -->
+    <!-- =================================================================== -->
+    <section id="t-inst" class="tab-content">
+      <div class="card">
+        <h3>Extracció i Conversió amb <code>T_CONV</code> i Comparació Horària</h3>
+        <p style="font-size:0.88rem; color:var(--muted); margin-bottom:1rem;">
+          Com explica el temari, un cop llegida l'hora amb <code>RD_LOC_T</code> dins un DB, podem comparar directament un camp (ex. <code>.HOUR == 5</code>) o extreure <code>Date</code> (<code>%MW18</code>) i <code>Time_Of_Day</code> (<code>%MD14</code>) amb <code>T_CONV</code> per programar franges horàries de manera molt més còmoda.
+        </p>
+
+        <div class="grid-2">
+          <div>
+            <div class="tia-block">
+              <div class="tia-block-head">RD_LOC_T (Llegir Hora Local)</div>
+              <div class="tia-block-body">
+                <div class="pin-col">
+                  <span>EN ── TRUE</span>
+                </div>
+                <div class="pin-col right">
+                  <span>RET_VAL ── <span class="pin-tag">%MW204 (0 = OK)</span></span>
+                  <span>OUT ── <span class="pin-tag">"Rellotge"."Data i hora"</span></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="tia-block">
+              <div class="tia-block-head">T_CONV (DTL TO Date)</div>
+              <div class="tia-block-body">
+                <div class="pin-col">
+                  <span>EN ── TRUE</span>
+                  <span>IN ── <span class="pin-tag">"Rellotge"."Data i hora"</span></span>
+                </div>
+                <div class="pin-col right">
+                  <span>OUT ── <span class="pin-tag" id="conv-date-out">%MW18 = D#2026-11-18</span></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="tia-block">
+              <div class="tia-block-head">T_CONV (DTL TO Time_Of_Day)</div>
+              <div class="tia-block-body">
+                <div class="pin-col">
+                  <span>EN ── TRUE</span>
+                  <span>IN ── <span class="pin-tag">"Rellotge"."Data i hora"</span></span>
+                </div>
+                <div class="pin-col right">
+                  <span>OUT ── <span class="pin-tag" id="conv-tod-out">%MD14 = TOD#21:00:00</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:1rem;">
+            <h4 style="color:#5eead4; margin-bottom:0.65rem;">Programador Horari de Sortida <code>%Q0.0</code></h4>
+            <p style="font-size:0.84rem; color:var(--muted); margin-bottom:0.75rem;">
+              Defineix una franja horària (com l'exemple del PDF: activar sortida entre les 10:00 i les 13:00) i comprova si l'hora local actual del simulador activa <code>%Q0.0</code>:
+            </p>
+            <div class="field-row">
+              <label>Hora inici:</label>
+              <input type="number" id="sched-start" min="0" max="23" value="10" style="width:65px;" onchange="checkSchedule()">
+              <label>Hora fi:</label>
+              <input type="number" id="sched-end" min="0" max="23" value="13" style="width:65px;" onchange="checkSchedule()">
+            </div>
+            <div id="sched-result" style="padding:0.8rem; border-radius:8px; font-weight:700; font-size:0.9rem; background:var(--panel); border:1px solid var(--border);">
+              Estat sortida %Q0.0: INACTIVA (0)
+            </div>
+
+            <div style="margin-top:0.9rem; font-size:0.83rem; color:var(--muted);">
+              <strong>Altres instruccions d'aritmètica de temps:</strong>
+              <ul style="margin-left:1.1rem; margin-top:0.3rem;">
+                <li><code>T_ADD</code>: Suma <code>Time + Time = Time</code> o <code>DTL + Time = DTL</code>.</li>
+                <li><code>T_SUB</code>: Resta <code>Time - Time = Time</code> o <code>DTL - Time = DTL</code>.</li>
+                <li><code>T_DIFF</code>: Diferència entre dos instants <code>DTL - DTL = Time</code>.</li>
+                <li><code>T_COMBINE</code>: Uneix un valor <code>Date</code> i un <code>TOD</code> per crear un <code>DTL</code>.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 3: OB30 (CÍCLICA), OB10 (HORÀRIA) I OB80 (ERROR DE TEMPS)  -->
+    <!-- =================================================================== -->
+    <section id="t-obs" class="tab-content">
+      <div class="grid-2">
+        <!-- OB30 -->
+        <div class="card">
+          <h3>
+            <span>🔄 Alarma Cíclica (<code>Cyclic Interrupt [OB30]</code>)</span>
+            <button class="btn primary" id="btn-ob30-toggle" onclick="toggleOb30()">⏸ Pausar OB30</button>
+          </h3>
+          <p style="font-size:0.85rem; color:var(--muted); margin-bottom:0.75rem;">
+            S'executa de manera periòdica i exacta cada interval configurat (fins a 4 esdeveniments cíclics). Ideal per a <strong>regulació PID</strong> o mostreig regular d'entrades analògiques.
+          </p>
+
+          <div class="field-row">
+            <label>Temps de cicle d'OB30:</label>
+            <select id="ob30-period" onchange="updateOb30Config()">
+              <option value="200">200 ms (5 vegades/segon)</option>
+              <option value="500" selected>500 ms (2 vegades/segon)</option>
+              <option value="1000">1000 ms (1 vegada/segon)</option>
+            </select>
+            <button class="btn danger" onclick="triggerOb80Error()">🚨 Simular sobrecàrrega (OB80)</button>
+          </div>
+
+          <div class="timeline-box">
+            <div style="display:flex; justify-content:space-between; font-size:0.82rem;">
+              <span>Execucions d'OB30: <strong class="mono" style="color:#60a5fa;" id="ob30-count">0</strong></span>
+              <span>Alarmes OB80 (Error de temps): <strong class="mono" style="color:#fca5a5;" id="ob80-count">0</strong></span>
+            </div>
+            <div class="pulse-track" id="ob30-track"></div>
+            <div style="font-size:0.78rem; color:var(--muted);">
+              🟦 Blau = Execució exacta d'OB30 · 🟥 Vermell = Error de temps (OB80 màxima prioritat + entrada al búfer de diagnòstic).
+            </div>
+          </div>
+        </div>
+
+        <!-- OB10 -->
+        <div class="card">
+          <h3>⏰ Alarma Horària (<code>Time of Day [OB10]</code>)</h3>
+          <p style="font-size:0.85rem; color:var(--muted); margin-bottom:0.75rem;">
+            Disponible des de firmware V4.0. Permet disparar un OB automàticament en una data i hora determinades sense programar comparacions manuals.
+          </p>
+
+          <div class="field-row">
+            <label>Periodicitat d'execució:</label>
+            <select id="ob10-freq">
+              <option value="once">Una vegada (Data i hora exactes)</option>
+              <option value="min">Cada minut (al segon :00)</option>
+              <option value="hour">Cada hora</option>
+              <option value="day" selected>Cada dia (ex. torn de matí 08:00)</option>
+              <option value="week">Cada setmana</option>
+              <option value="month">Cada mes / A finals de mes</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <label>Referència:</label>
+            <select id="ob10-ref">
+              <option value="local">Hora local</option>
+              <option value="sys">Hora del sistema (UTC)</option>
+            </select>
+            <button class="btn warn" onclick="fireOb10Test()">⚡ Simular arribada de l'hora (Disparar OB10)</button>
+          </div>
+
+          <div style="font-size:0.82rem; color:var(--muted); margin-bottom:0.35rem;">Registre d'esdeveniments i Búfer de Diagnòstic:</div>
+          <div class="log-box" id="ob-log">
+            <div class="log-line">Sistema en RUN. Esperant interrupcions cícliques o horàries...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTANYA 4: TEST D'AUTOAVALUACIÓ                                    -->
+    <!-- =================================================================== -->
+    <section id="t-quiz" class="tab-content">
+      <div class="card">
+        <h3>Test d'Autoavaluació: Rellotge RTC i Alarmes Cícliques</h3>
+        <div id="quiz-container"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function openTab(id, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('nav.tabs button').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function toggleGuide(id) {
+      document.getElementById(id).classList.toggle('collapsed');
+    }
+
+    // --- PESTANYA 1: RELLOTGE RTC I DTL ---
+    let baseUtcTime = new Date();
+
+    function pad(n, len = 2) {
+      return String(n).padStart(len, '0');
+    }
+
+    function formatDtl(d) {
+      return `DTL#${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}-${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}.${pad(d.getUTCMilliseconds(), 3)}`;
+    }
+
+    function getLocalDateObj() {
+      const tzHours = parseInt(document.getElementById('tz-select').value, 10);
+      const dstEnabled = document.getElementById('dst-check').checked;
+      // Comprovem si estem en mesos d'horari d'estiu aproximat (abril-setembre) o forcem +1h si l'usuari ho marca en estiu
+      const month = baseUtcTime.getUTCMonth() + 1;
+      const isSummer = month >= 4 && month <= 9;
+      const dstOffset = (dstEnabled && isSummer) ? 1 : 0;
+      const totalOffsetMs = (tzHours + dstOffset) * 3600 * 1000;
+      return {
+        date: new Date(baseUtcTime.getTime() + totalOffsetMs),
+        tzHours,
+        dstOffset
+      };
+    }
+
+    function updateRtcDisplay() {
+      const { date: loc, tzHours, dstOffset } = getLocalDateObj();
+
+      document.getElementById('sys-clock-str').textContent = formatDtl(baseUtcTime);
+      document.getElementById('loc-clock-str').textContent = formatDtl(loc);
+      document.getElementById('tz-summary').textContent =
+        `Aplicat: UTC+${pad(tzHours)}:00 ${dstOffset ? '+ 60 min (Horari d'estiu actiu)' : '(Horari estàndard / hivern)'}`;
+
+      // Actualitzar camps T_CONV de la pestanya 2
+      const dateStr = `D#${loc.getUTCFullYear()}-${pad(loc.getUTCMonth() + 1)}-${pad(loc.getUTCDate())}`;
+      const todStr = `TOD#${pad(loc.getUTCHours())}:${pad(loc.getUTCMinutes())}:${pad(loc.getUTCSeconds())}`;
+      document.getElementById('conv-date-out').textContent = `%MW18 = ${dateStr}`;
+      document.getElementById('conv-tod-out').textContent = `%MD14 = ${todStr}`;
+
+      // Renderitzar els 12 bytes de l'estructura DTL
+      const weekdayS7 = loc.getUTCDay() + 1; // 1 = Diumenge .. 7 = Dissabte
+      const daysCat = ['Dg', 'Dl', 'Dt', 'Dc', 'Dj', 'Dv', 'Ds'];
+      const bytesData = [
+        { idx: 'Byte 0..1', name: 'YEAR', type: 'UInt', val: loc.getUTCFullYear() },
+        { idx: 'Byte 2', name: 'MONTH', type: 'USInt', val: loc.getUTCMonth() + 1 },
+        { idx: 'Byte 3', name: 'DAY', type: 'USInt', val: loc.getUTCDate() },
+        { idx: 'Byte 4', name: 'WEEKDAY', type: 'USInt', val: `${weekdayS7} (${daysCat[loc.getUTCDay()]})` },
+        { idx: 'Byte 5', name: 'HOUR', type: 'USInt', val: loc.getUTCHours() },
+        { idx: 'Byte 6', name: 'MINUTE', type: 'USInt', val: loc.getUTCMinutes() },
+        { idx: 'Byte 7', name: 'SECOND', type: 'USInt', val: loc.getUTCSeconds() },
+        { idx: 'Byte 8..11', name: 'NANOSECOND', type: 'UDInt', val: loc.getUTCMilliseconds() * 1000000 }
+      ];
+
+      const grid = document.getElementById('dtl-bytes-grid');
+      grid.innerHTML = '';
+      bytesData.forEach(b => {
+        const div = document.createElement('div');
+        div.className = 'dtl-byte';
+        div.innerHTML = `<div class="b-idx">${b.idx}</div><div class="b-name">${b.name}</div><div class="b-type">${b.type}</div><div class="b-val">${b.val}</div>`;
+        grid.appendChild(div);
+      });
+
+      checkSchedule();
+    }
+
+    function adoptPcTime() {
+      baseUtcTime = new Date();
+      updateRtcDisplay();
+    }
+
+    function simulatePowerLoss() {
+      // Si es descarrega el condensador (més de 12-20 dies sense llum), torna a DTL#1970-01-01-00:00:00
+      baseUtcTime = new Date(Date.UTC(1970, 0, 1, 0, 0, 0));
+      updateRtcDisplay();
+      alert('⚠️ Condensador descarregat (> 20 dies sense tensió): El rellotge intern de l'S7-1200 s'ha reiniciat al valor per defecte DTL#1970-01-01-00:00:00!');
+    }
+
+    function setManualLocalTime() {
+      const val = document.getElementById('manual-dt').value;
+      if (!val) return;
+      const parsed = new Date(val + 'Z');
+      const tzHours = parseInt(document.getElementById('tz-select').value, 10);
+      baseUtcTime = new Date(parsed.getTime() - tzHours * 3600 * 1000);
+      updateRtcDisplay();
+    }
+
+    function checkSchedule() {
+      const { date: loc } = getLocalDateObj();
+      const h = loc.getUTCHours();
+      const startH = parseInt(document.getElementById('sched-start').value, 10);
+      const endH = parseInt(document.getElementById('sched-end').value, 10);
+      const resBox = document.getElementById('sched-result');
+      const active = h >= startH && h < endH;
+
+      if (active) {
+        resBox.style.borderColor = '#22c55e';
+        resBox.style.color = '#86efac';
+        resBox.textContent = `✅ Estat sortida %Q0.0: ACTIVA (1) — Hora local (${pad(h)}h) dins la franja [${pad(startH)}:00 - ${pad(endH)}:00].`;
+      } else {
+        resBox.style.borderColor = '#334155';
+        resBox.style.color = '#94a3b8';
+        resBox.textContent = `⏹ Estat sortida %Q0.0: INACTIVA (0) — Hora local (${pad(h)}h) fora de la franja [${pad(startH)}:00 - ${pad(endH)}:00].`;
+      }
+    }
+
+    // Avançar segons del rellotge RTC cada segon
+    setInterval(() => {
+      baseUtcTime = new Date(baseUtcTime.getTime() + 1000);
+      updateRtcDisplay();
+    }, 1000);
+
+    // --- PESTANYA 3: OB30, OB10 I OB80 ---
+    let ob30Running = true;
+    let ob30Count = 0;
+    let ob80Count = 0;
+    let ob30Timer = null;
+    const totalCells = 24;
+
+    function initTrack() {
+      const track = document.getElementById('ob30-track');
+      track.innerHTML = '';
+      for (let i = 0; i < totalCells; i++) {
+        const c = document.createElement('div');
+        c.className = 'tick-cell ob1';
+        track.appendChild(c);
+      }
+    }
+
+    function pushTrackCell(type) {
+      const track = document.getElementById('ob30-track');
+      if (track.children.length >= totalCells) {
+        track.removeChild(track.firstChild);
+      }
+      const c = document.createElement('div');
+      c.className = 'tick-cell ' + type;
+      track.appendChild(c);
+    }
+
+    function addObLog(msg, color = '#cbd5e1') {
+      const log = document.getElementById('ob-log');
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      line.style.color = color;
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      log.prepend(line);
+    }
+
+    function startOb30Loop() {
+      if (ob30Timer) clearInterval(ob30Timer);
+      const period = parseInt(document.getElementById('ob30-period').value, 10);
+      ob30Timer = setInterval(() => {
+        if (!ob30Running) return;
+        ob30Count++;
+        document.getElementById('ob30-count').textContent = ob30Count;
+        pushTrackCell('ob30');
+      }, period);
+    }
+
+    function updateOb30Config() {
+      const period = document.getElementById('ob30-period').value;
+      addObLog(`🔄 Configuració OB30 actualitzada: interval periòdic cada ${period} ms.`, '#7dd3fc');
+      startOb30Loop();
+    }
+
+    function toggleOb30() {
+      ob30Running = !ob30Running;
+      document.getElementById('btn-ob30-toggle').textContent = ob30Running ? '⏸ Pausar OB30' : '▶ Reprendre OB30';
+    }
+
+    function triggerOb80Error() {
+      ob80Count++;
+      document.getElementById('ob80-count').textContent = ob80Count;
+      pushTrackCell('ob80');
+      addLogOb80();
+    }
+
+    function addLogOb80() {
+      addObLog('🚨 ERROR DE TEMPS (OB80): Superat el temps màxim de cicle! OB80 executat amb màxima prioritat i esdeveniment registrat al búfer de diagnòstic.', '#fca5a5');
+    }
+
+    function fireOb10Test() {
+      const freq = document.getElementById('ob10-freq').selectedOptions[0].text;
+      const ref = document.getElementById('ob10-ref').selectedOptions[0].text;
+      addObLog(`⏰ ALARMA HORÀRIA [OB10] DISPARADA! Mode: "${freq}" | Referència: ${ref}.`, '#e9d5ff');
+    }
+
+    // --- PESTANYA 4: QUIZ ---
+    const quizList = [
+      {
+        q: "1. Com manté la data i l'hora el rellotge intern (RTC) del Siemens S7-1200 quan se li talla l'alimentació?",
+        opts: [
+          "Mitjançant una pila de botó CR2032 extraïble.",
+          "Mitjançant un condensador d'alta capacitat (sense bateria) durant un màxim de 12 a 20 dies.",
+          "Es perd immediatament cada vegada que s'apaga el PLC."
+        ],
+        ans: 1,
+        exp: "Correcte! L'S7-1200 no porta bateria; usa un supercondensador que manté el rellotge entre 12 i 20 dies."
+      },
+      {
+        q: "2. Quants bytes ocupa una variable de tipus DTL (Data i Hora llarg) i quina instrucció permet extreure'n només la data (Date) o l'hora (TOD)?",
+        opts: [
+          "Ocupa 4 bytes i s'extreu amb RD_SYS_T.",
+          "Ocupa 12 bytes i s'extreu amb T_CONV.",
+          "Ocupa 8 bytes i s'extreu amb T_DIFF."
+        ],
+        ans: 1,
+        exp: "Exacte! DTL ocupa 12 bytes i la instrucció T_CONV permet convertir DTL a Date o Time_Of_Day."
+      },
+      {
+        q: "3. Quin bloc d'organització s'executa cada interval de temps exacte (ex. per a un bucle PID) i quin s'executa si se supera el temps màxim de cicle?",
+        opts: [
+          "OB30 (Alarma cíclica) i OB80 (Error de temps, màxima prioritat).",
+          "OB10 (Alarma horària) i OB40 (Alarma de procés).",
+          "OB100 (Arrencada) i OB1 (Cicle principal)."
+        ],
+        ans: 0,
+        exp: "Molt bé! OB30 és la interrupció cíclica periòdica i OB80 és l'alarma d'error de temps."
+      }
+    ];
+
+    function renderQuiz() {
+      const box = document.getElementById('quiz-container');
+      quizList.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:9px; padding:1rem; margin-bottom:0.85rem;';
+        card.innerHTML = `<div style="font-weight:700; margin-bottom:0.55rem;">${item.q}</div>`;
+        item.opts.forEach((o, oi) => {
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.style.cssText = 'display:block; width:100%; text-align:left; margin-bottom:0.4rem;';
+          btn.textContent = o;
+          btn.onclick = () => {
+            const fb = document.getElementById(`q-res-${idx}`);
+            if (oi === item.ans) {
+              fb.style.color = '#86efac';
+              fb.textContent = '✅ ' + item.exp;
+            } else {
+              fb.style.color = '#fca5a5';
+              fb.textContent = '❌ Torna-ho a intentar!';
+            }
+          };
+          card.appendChild(btn);
+        });
+        const fb = document.createElement('div');
+        fb.id = `q-res-${idx}`;
+        fb.style.cssText = 'font-size:0.85rem; margin-top:0.4rem; font-weight:600;';
+        card.appendChild(fb);
+        box.appendChild(card);
+      });
+    }
+
+    updateRtcDisplay();
+    initTrack();
+    startOb30Loop();
+    renderQuiz();
+  </script>
+</body>
+</html>
