@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador Alarmes de Procés (OB40) — S7-1200</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-alt: #263349;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --siemens: #009999;
+      --siemens-dark: #007373;
+      --ob1-col: #3b82f6;
+      --ob40-col: #f59e0b;
+      --ok: #22c55e;
+      --err: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      padding-bottom: 3rem;
+    }
+
+    header {
+      background: linear-gradient(135deg, #091e2c 0%, #0f172a 100%);
+      border-bottom: 2px solid var(--siemens);
+      padding: 1.25rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+    }
+
+    .badge {
+      background: var(--siemens);
+      color: #fff;
+      font-weight: 700;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    h1 { font-size: 1.25rem; font-weight: 700; }
+    .subtitle { font-size: 0.85rem; color: var(--muted); }
+
+    nav.tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    nav.tabs button {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.55rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88rem;
+      transition: all 0.2s;
+    }
+
+    nav.tabs button:hover { color: var(--text); border-color: var(--siemens); }
+    nav.tabs button.active { background: var(--siemens); color: #fff; border-color: var(--siemens); }
+
+    main {
+      max-width: 1260px;
+      margin: 1.5rem auto;
+      padding: 0 1.25rem;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .guide-box {
+      background: rgba(0, 153, 153, 0.1);
+      border: 1px solid var(--siemens);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .guide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .guide-header h2 { font-size: 1rem; color: #5eead4; }
+    .guide-body { margin-top: 0.7rem; font-size: 0.9rem; color: #e2e8f0; }
+    .guide-body.collapsed { display: none; }
+    .guide-body ul { margin-left: 1.25rem; margin-top: 0.35rem; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.85rem;
+      color: #f1f5f9;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.45rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.95rem;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover { border-color: #38bdf8; }
+    .btn.primary { background: var(--siemens); border-color: var(--siemens); color: #fff; }
+    .btn.primary:hover { background: var(--siemens-dark); }
+    .btn.warn { background: rgba(245, 158, 11, 0.2); border-color: var(--ob40-col); color: #fde68a; }
+    .btn.warn:hover { background: rgba(245, 158, 11, 0.35); }
+
+    .mono { font-family: 'Consolas', 'Courier New', monospace; font-weight: 600; }
+
+    /* Cinta transportadora visual */
+    .conveyor-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .track {
+      height: 54px;
+      background: #1e293b;
+      border: 2px solid #475569;
+      border-radius: 8px;
+      position: relative;
+      margin: 1.2rem 0;
+    }
+
+    .sensor-zone {
+      position: absolute;
+      left: 38%;
+      top: -14px;
+      bottom: -14px;
+      width: 6px;
+      background: #ef4444;
+      box-shadow: 0 0 12px #ef4444;
+    }
+
+    .sensor-label {
+      position: absolute;
+      left: 34%;
+      top: 4px;
+      font-size: 0.76rem;
+      color: #fca5a5;
+      font-weight: 700;
+    }
+
+    .ejector-zone {
+      position: absolute;
+      left: 68%;
+      top: -12px;
+      width: 34px;
+      height: 22px;
+      background: #64748b;
+      border-radius: 4px;
+      transition: transform 0.1s, background 0.1s;
+    }
+
+    .ejector-zone.fire {
+      background: #22c55e;
+      transform: translateY(26px);
+      box-shadow: 0 0 16px #22c55e;
+    }
+
+    .ejector-label {
+      position: absolute;
+      left: 63%;
+      top: 4px;
+      font-size: 0.76rem;
+      color: #86efac;
+      font-weight: 700;
+    }
+
+    .part-item {
+      position: absolute;
+      top: 9px;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: #f59e0b;
+      border: 2px solid #fef3c7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #0f172a;
+      transition: top 0.2s, opacity 0.2s;
+    }
+
+    .part-item.rejected {
+      top: 75px;
+      background: #22c55e;
+      opacity: 0.4;
+    }
+
+    /* Barra de Scan CPU */
+    .scan-bar-wrap {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .progress-outer {
+      height: 24px;
+      background: #091e2c;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      margin: 0.5rem 0;
+      position: relative;
+    }
+
+    .progress-inner {
+      height: 100%;
+      width: 0%;
+      background: var(--ob1-col);
+      transition: width 0.05s linear, background 0.15s;
+    }
+
+    .progress-inner.interrupted {
+      background: var(--ob40-col);
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.85rem;
+    }
+
+    .kpi {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7rem;
+      text-align: center;
+    }
+
+    .kpi-val {
+      font-size: 1.35rem;
+      font-weight: 800;
+      font-family: 'Consolas', monospace;
+    }
+
+    .kpi-lbl {
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+
+    /* Configurador TIA Portal */
+    .tia-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .field-group {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+    }
+
+    .field-group label {
+      display: block;
+      font-size: 0.82rem;
+      color: #7dd3fc;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .field-group select, .field-group input[type="range"] {
+      width: 100%;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.45rem;
+      border-radius: 6px;
+      font-size: 0.88rem;
+    }
+
+    .log-box {
+      background: #091e2c;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+      font-family: 'Consolas', monospace;
+      font-size: 0.82rem;
+      max-height: 220px;
+      overflow-y: auto;
+      color: #cbd5e1;
+    }
+
+    .log-entry { margin-bottom: 0.35rem; border-bottom: 1px solid rgba(51, 65, 85, 0.5); padding-bottom: 0.25rem; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="badge">MP 0965 · S7-1200</span>
+      <div>
+        <h1>Alarmes de Procés (Hardware Interrupt · OB40)</h1>
+        <div class="subtitle">Comparativa Cicle Scan (OB1) vs. Interrupció Immediata, Filtres DI i Perifèria (:P)</div>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button type="button" class="active" onclick="openTab('t-sim', this)">1. Simulador Cinta i OB40</button>
+      <button type="button" onclick="openTab('t-tia', this)">2. Configurador TIA Portal (Filtre i :P)</button>
+      <button type="button" onclick="openTab('t-quiz', this)">3. Test d'Autoavaluació</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- PESTANYA 1: SIMULADOR CINTA TRANSPORTADORA -->
+    <section id="t-sim" class="tab-content active">
+      <div class="guide-box">
+        <div class="guide-header" onclick="toggleGuide('g1')">
+          <h2>📘 Com experimentar: Per què necessitem OB40 en processos ràpids?</h2>
+          <span style="font-size:0.8rem; color:#5eead4;">Clic per desplegar/plegar</span>
+        </div>
+        <div id="g1" class="guide-body">
+          <ul>
+            <li><strong>Experiment A (Mode NOMÉS OB1):</strong> Posa un cicle Scan llarg (ex. <code>80 ms</code>) i llança una peça ràpida (durada del pols al sensor <code>15 ms</code>). Veuràs que la peça passa pel sensor <code>%I0.0</code> mentre <code>OB1</code> està ocupat i <strong>es perd</strong> sense activar l'expulsor!</li>
+            <li><strong>Experiment B (Mode ALARMA OB40 + :P):</strong> Activa <code>OB40</code>. Quan la peça toca el sensor <code>%I0.0</code>, el maquinari <strong>interromp immediatament</strong> <code>OB1</code>, executa <code>OB40</code> i dispara <code>%Q0.0:P</code> a l'instant, expulsant el 100% de les peces.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span>Banc de Proves: Cinta d'Alta Velocitat amb Expulsor Pneumàtic</span>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button type="button" id="btn-mode-ob1" class="btn" onclick="setMode(false)">🐢 Mode: Només OB1 (Cíclic)</button>
+            <button type="button" id="btn-mode-ob40" class="btn primary" onclick="setMode(true)">⚡ Mode: Alarma OB40 + %Q0.0:P</button>
+            <button type="button" class="btn warn" onclick="spawnPart()">📦 Llançar peça defectuosa</button>
+            <button type="button" class="btn" onclick="resetStats()">🔄 Reiniciar comptadors</button>
+          </div>
+        </h3>
+
+        <div class="grid-2" style="margin-bottom:0.8rem;">
+          <div class="field-group">
+            <label>Temps de cicle Scan d'OB1 (càrrega del programa): <span id="lbl-scan-ms" class="mono">80 ms</span></label>
+            <input type="range" id="rng-scan" min="20" max="150" step="10" value="80" oninput="updateSliders()" />
+          </div>
+          <div class="field-group">
+            <label>Amplada del pols de la peça al sensor %I0.0: <span id="lbl-pulse-ms" class="mono">15 ms</span></label>
+            <input type="range" id="rng-pulse" min="5" max="60" step="5" value="15" oninput="updateSliders()" />
+          </div>
+        </div>
+
+        <div class="conveyor-box">
+          <div class="sensor-label">Sensor %I0.0 (Flanc 0→1)</div>
+          <div class="ejector-label">Cilindre %Q0.0</div>
+          <div class="track" id="track">
+            <div class="sensor-zone"></div>
+            <div class="ejector-zone" id="ejector"></div>
+          </div>
+          <div style="font-size:0.82rem; color:var(--muted); display:flex; justify-content:space-between;">
+            <span>⬅ Entrada cinta</span>
+            <span id="sim-msg" style="color:#fde68a; font-weight:600;">Llest. Prem "Llançar peça defectuosa" per provar.</span>
+            <span>Sortida cinta ➡</span>
+          </div>
+        </div>
+
+        <div class="scan-bar-wrap">
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+            <span>Estat d'execució de la CPU: <strong id="cpu-exec-state" style="color:#60a5fa;">Executant Main [OB1] (Cicle Scan)</strong></span>
+            <span class="mono" id="scan-timer-lbl">0 / 80 ms</span>
+          </div>
+          <div class="progress-outer">
+            <div class="progress-inner" id="scan-bar"></div>
+          </div>
+
+          <div class="kpi-row">
+            <div class="kpi"><div class="kpi-val" id="k-total">0</div><div class="kpi-lbl">Peces passades</div></div>
+            <div class="kpi"><div class="kpi-val" style="color:var(--ok);" id="k-ok">0</div><div class="kpi-lbl">Expulsades correctament</div></div>
+            <div class="kpi"><div class="kpi-val" style="color:var(--err);" id="k-lost">0</div><div class="kpi-lbl">Peces perdudes (no vistes)</div></div>
+            <div class="kpi"><div class="kpi-val" style="color:var(--ob40-col);" id="k-irq">0</div><div class="kpi-lbl">Interrupcions OB40 executades</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PESTANYA 2: CONFIGURADOR TIA PORTAL -->
+    <section id="t-tia" class="tab-content">
+      <div class="card">
+        <h3>Simulador de Configuració Maquinari a TIA Portal (Propietats CPU → DI)</h3>
+        <p style="font-size:0.88rem; color:var(--muted); margin-bottom:1rem;">
+          Configura els paràmetres del canal <code>DI 0 (%I0.0)</code> i del bloc <code>OB40</code>, i envia un impuls de prova per comprovar si la CPU el captura o si el filtre digital el bloqueja.
+        </p>
+
+        <div class="tia-form">
+          <div class="field-group">
+            <label>1. Detecció de flanc a %I0.0</label>
+            <select id="cfg-edge">
+              <option value="none">Desactivat (Sense alarma de procés)</option>
+              <option value="rising" selected>Flanc ascendent (0 → 1) → OB40</option>
+              <option value="falling">Flanc descendent (1 → 0) → OB40</option>
+              <option value="both">Ambdós flancs (0→1 i 1→0) → OB40</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label>2. Filtre d'entrada digital (Input Filter)</label>
+            <select id="cfg-filter">
+              <option value="6.4">6.4 ms (Valor per defecte de fàbrica)</option>
+              <option value="1.6">1.6 ms</option>
+              <option value="0.8">0.8 ms</option>
+              <option value="0.2" selected>0.2 ms (Alta velocitat)</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label>3. Adreçament de la sortida dins d'OB40</label>
+            <select id="cfg-out">
+              <option value="img">%Q0.0 (Memòria imatge de procés)</option>
+              <option value="periph" selected>%Q0.0:P (Perifèria immediata)</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label>4. Durada real de l'impuls del sensor (ms)</label>
+            <select id="cfg-sig">
+              <option value="0.5">0.5 ms (Sensor òptic molt ràpid)</option>
+              <option value="3.0" selected>3.0 ms (Impuls curt estàndard)</option>
+              <option value="15.0">15.0 ms (Impuls llarg)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem; display:flex; gap:0.6rem; align-items:center;">
+          <button type="button" class="btn primary" onclick="testTiaConfig()">⚡ Simular impuls del sensor ara</button>
+          <button type="button" class="btn" onclick="document.getElementById('tia-log').innerHTML=''">Esborrar registre</button>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <div style="font-size:0.82rem; color:var(--muted); margin-bottom:0.35rem;">Búfer de diagnòstic i traça d'execució:</div>
+          <div class="log-box" id="tia-log">
+            <div class="log-entry">Preparat. Ajusta els paràmetres i prem "Simular impuls del sensor ara".</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PESTANYA 3: QUIZ -->
+    <section id="t-quiz" class="tab-content">
+      <div class="card">
+        <h3>Test d'Autoavaluació: Alarmes de Procés (OB40)</h3>
+        <div id="quiz-box"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function openTab(id, btn) {
+      document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+      document.querySelectorAll('nav.tabs button').forEach(function(el) { el.classList.remove('active'); });
+      document.getElementById(id).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function toggleGuide(id) {
+      document.getElementById(id).classList.toggle('collapsed');
+    }
+
+    // --- SIMULADOR CINTA I OB40 ---
+    var useOb40 = true;
+    var scanDuration = 80;
+    var pulseDuration = 15;
+    var scanElapsed = 0;
+    var stats = { total: 0, ok: 0, lost: 0, irq: 0 };
+    var parts = [];
+    var partIdCounter = 1;
+
+    function setMode(enableOb40) {
+      useOb40 = enableOb40;
+      document.getElementById('btn-mode-ob1').className = enableOb40 ? 'btn' : 'btn primary';
+      document.getElementById('btn-mode-ob40').className = enableOb40 ? 'btn primary' : 'btn';
+      document.getElementById('sim-msg').textContent = enableOb40
+        ? "Mode OB40 actiu: qualsevol flanc a %I0.0 interromp OB1 a l'instant."
+        : "Mode Només OB1: %I0.0 només es llegeix a l'inici de cada cicle Scan.";
+    }
+
+    function updateSliders() {
+      scanDuration = parseInt(document.getElementById('rng-scan').value, 10);
+      pulseDuration = parseInt(document.getElementById('rng-pulse').value, 10);
+      document.getElementById('lbl-scan-ms').textContent = scanDuration + ' ms';
+      document.getElementById('lbl-pulse-ms').textContent = pulseDuration + ' ms';
+    }
+
+    function resetStats() {
+      stats = { total: 0, ok: 0, lost: 0, irq: 0 };
+      renderStats();
+    }
+
+    function renderStats() {
+      document.getElementById('k-total').textContent = stats.total;
+      document.getElementById('k-ok').textContent = stats.ok;
+      document.getElementById('k-lost').textContent = stats.lost;
+      document.getElementById('k-irq').textContent = stats.irq;
+    }
+
+    function spawnPart() {
+      var track = document.getElementById('track');
+      var el = document.createElement('div');
+      el.className = 'part-item';
+      el.textContent = 'P' + partIdCounter++;
+      el.style.left = '2%';
+      track.appendChild(el);
+
+      stats.total++;
+      renderStats();
+
+      parts.push({
+        el: el,
+        pos: 2,
+        sensorTriggered: false,
+        detected: false,
+        ejected: false,
+        countedLost: false
+      });
+    }
+
+    function fireEjector(part) {
+      var ej = document.getElementById('ejector');
+      ej.classList.add('fire');
+      setTimeout(function() { ej.classList.remove('fire'); }, 220);
+      part.ejected = true;
+      part.el.classList.add('rejected');
+      stats.ok++;
+      renderStats();
+    }
+
+    function triggerOb40Interrupt() {
+      stats.irq++;
+      renderStats();
+      var bar = document.getElementById('scan-bar');
+      var stateLbl = document.getElementById('cpu-exec-state');
+      bar.classList.add('interrupted');
+      stateLbl.style.color = '#fbbf24';
+      stateLbl.textContent = '⚡ INTERRUPCIÓ OB40 EXECUTANT-SE (%Q0.0:P = 1)!';
+      setTimeout(function() {
+        bar.classList.remove('interrupted');
+        stateLbl.style.color = '#60a5fa';
+        stateLbl.textContent = 'Executant Main [OB1] (Cicle Scan)';
+      }, 280);
+    }
+
+    // Bucle de simulació (cada 30 ms reals = 5 ms simulats de CPU)
+    setInterval(function() {
+      var simStepMs = 5;
+      scanElapsed += simStepMs;
+      var isNewScanStart = scanElapsed >= scanDuration;
+      if (isNewScanStart) {
+        scanElapsed = 0;
+      }
+
+      var pct = Math.min(100, (scanElapsed / scanDuration) * 100);
+      document.getElementById('scan-bar').style.width = pct + '%';
+      document.getElementById('scan-timer-lbl').textContent = scanElapsed + ' / ' + scanDuration + ' ms';
+
+      for (var i = parts.length - 1; i >= 0; i--) {
+        var p = parts[i];
+        p.pos += 1.4;
+        p.el.style.left = p.pos + '%';
+
+        // Zona sensor (36% - segons amplada de pols)
+        var inSensor = p.pos >= 36 && p.pos <= 36 + (pulseDuration * 0.45);
+
+        if (inSensor) {
+          if (!p.sensorTriggered) {
+            p.sensorTriggered = true;
+            if (useOb40) {
+              p.detected = true;
+              triggerOb40Interrupt();
+              document.getElementById('sim-msg').textContent = "✅ OB40 ha capturat el flanc a %I0.0 a l'instant!";
+            }
+          }
+          // Si estem en mode només OB1, només es llegeix si coincideix amb l'inici del cicle Scan
+          if (!useOb40 && isNewScanStart && !p.detected) {
+            p.detected = true;
+            document.getElementById('sim-msg').textContent = "✅ OB1 ha coincidit just amb el pols a l'inici del Scan.";
+          }
+        }
+
+        // Zona expulsor (67% - 72%)
+        if (p.pos >= 67 && !p.ejected) {
+          if (p.detected) {
+            fireEjector(p);
+          } else if (p.pos >= 72 && !p.countedLost) {
+            p.countedLost = true;
+            stats.lost++;
+            renderStats();
+            document.getElementById('sim-msg').textContent = '❌ Peça perduda! El pols va acabar abans que OB1 llegís %I0.0.';
+          }
+        }
+
+        if (p.pos > 102) {
+          p.el.remove();
+          parts.splice(i, 1);
+        }
+      }
+    }, 30);
+
+    // --- PESTANYA 2: SIMULADOR CONFIGURACIÓ TIA PORTAL ---
+    function testTiaConfig() {
+      var edge = document.getElementById('cfg-edge').value;
+      var filterMs = parseFloat(document.getElementById('cfg-filter').value);
+      var outMode = document.getElementById('cfg-out').value;
+      var sigMs = parseFloat(document.getElementById('cfg-sig').value);
+      var log = document.getElementById('tia-log');
+
+      function addLog(msg, color) {
+        var div = document.createElement('div');
+        div.className = 'log-entry';
+        div.style.color = color || '#cbd5e1';
+        div.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+        log.insertBefore(div, log.firstChild);
+      }
+
+      if (sigMs < filterMs) {
+        addLog("❌ BLOQUEJAT PEL FILTRE MAQUINARI: L'impuls dura " + sigMs + " ms, però el filtre d'entrada està ajustat a " + filterMs + " ms. La CPU ignora el senyal com si fos soroll elèctric!", '#fca5a5');
+        return;
+      }
+
+      if (edge === 'none') {
+        addLog("⚠️ SENSE INTERRUPCIÓ: El senyal supera el filtre (" + sigMs + " ms ≥ " + filterMs + " ms), però OB40 no està associat. S'esperarà al següent cicle d'OB1.", '#fde68a');
+        return;
+      }
+
+      if (outMode === 'img') {
+        addLog("⚠️ OB40 EXECUTAT PERÒ AMB RETARD DE SORTIDA: OB40 s'ha disparat pel flanc (" + edge + "), però com que has escrit a %Q0.0 (memòria imatge) sense ':P', la sortida física esperarà fins al final d'OB1!", '#fde68a');
+      } else {
+        addLog("✅ ÒPTIM: Filtrat OK (" + sigMs + " ms ≥ " + filterMs + " ms) → Flanc (" + edge + ") dispara OB40 a l'instant → Escriptura directa a %Q0.0:P executada en < 1 ms!", '#86efac');
+      }
+    }
+
+    // --- PESTANYA 3: QUIZ ---
+    var quizData = [
+      {
+        q: "1. Què fa exactament la CPU del S7-1200 quan es produeix una alarma de procés (OB40)?",
+        opts: [
+          "Espera que acabi el cicle d'OB1 i llavors executa OB40.",
+          "Interromp immediatament l'execució d'OB1, executa OB40 i reprèn OB1 on s'havia quedat.",
+          "Passa la CPU a estat STOP per seguretat."
+        ],
+        ans: 1,
+        exp: "Correcte! L'alarma de procés interromp el cicle normal de manera asíncrona per atendre l'esdeveniment sense retards."
+      },
+      {
+        q: "2. Per què és recomanable escriure '%Q0.0:P' dins d'OB40 en lloc de '%Q0.0'?",
+        opts: [
+          "Perquè '%Q0.0:P' escriu directament a la sortida física a l'instant, sense esperar al final del cicle Scan.",
+          "Perquè '%Q0.0' sense ':P' dona error de compilació dins d'un OB40.",
+          "Perquè ':P' fa que la sortida sigui remanent si marxa la llum."
+        ],
+        ans: 0,
+        exp: "Exacte! La memòria imatge Q només s'aboca a les sortides físiques en acabar el cicle Scan; amb ':P' s'actua directament sobre la perifèria."
+      },
+      {
+        q: "3. Si un sensor genera un pols d'1 ms i el filtre digital de l'entrada DI 0 està a 6.4 ms, què passarà?",
+        opts: [
+          "Es dispararà OB40 sis vegades.",
+          "El filtre considerarà el pols com un rebot o soroll i no s'activarà ni l'entrada ni OB40.",
+          "La CPU entrarà en error de temps (OB80)."
+        ],
+        ans: 1,
+        exp: "Molt bé! El filtre d'entrada ha de ser sempre inferior a la durada mínima del pols que volem detectar."
+      }
+    ];
+
+    function initQuiz() {
+      var box = document.getElementById('quiz-box');
+      quizData.forEach(function(item, idx) {
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:9px; padding:1rem; margin-bottom:0.85rem;';
+        wrap.innerHTML = '<div style="font-weight:700; margin-bottom:0.55rem;">' + item.q + '</div>';
+        item.opts.forEach(function(o, oi) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'btn';
+          b.style.cssText = 'display:block; width:100%; text-align:left; margin-bottom:0.4rem;';
+          b.textContent = o;
+          b.onclick = function() {
+            var res = document.getElementById('qres-' + idx);
+            if (oi === item.ans) {
+              res.style.color = '#86efac';
+              res.textContent = '✅ ' + item.exp;
+            } else {
+              res.style.color = '#fca5a5';
+              res.textContent = '❌ Incorrecte. Torna-ho a intentar!';
+            }
+          };
+          wrap.appendChild(b);
+        });
+        var res = document.createElement('div');
+        res.id = 'qres-' + idx;
+        res.style.cssText = 'font-size:0.86rem; font-weight:600; margin-top:0.35rem;';
+        wrap.appendChild(res);
+        box.appendChild(wrap);
+      });
+    }
+
+    initQuiz();
+  </script>
+</body>
+</html>
